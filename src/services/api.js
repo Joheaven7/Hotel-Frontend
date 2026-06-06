@@ -1,8 +1,18 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 
+let apiBase = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+
+// Fallback just in case the Vercel environment variable is accidentally malformed (e.g. missing https:// or contains the key name)
+if (apiBase.includes('VITE_API_URL=')) {
+  apiBase = apiBase.replace('VITE_API_URL=', '');
+}
+if (!apiBase.startsWith('http')) {
+  apiBase = `https://${apiBase}`;
+}
+
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
+  baseURL: apiBase,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
