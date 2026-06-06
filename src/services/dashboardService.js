@@ -151,25 +151,43 @@ export const dashboardService = {
             ? `${res.roomId.type} - Room ${res.roomId.roomNumber || ''}`
             : res.roomId?.roomNumber
               ? `Room ${res.roomId.roomNumber}`
-              : 'Assigned on arrival',
+              : res.hallId?.hallName
+                ? `Hall: ${res.hallId.hallName}`
+                : 'Assigned on arrival',
           checkIn: safeFormat(res.checkInDate),
           checkOut: safeFormat(res.checkOutDate),
           status: res.status?.toLowerCase() || 'pending',
           totalPrice: res.totalPrice || 0,
+          isHall: !!res.hallId,
         })),
         past: (dbData.recentReservations || []).map((res) => ({
           id: res._id,
           guest: 'Me',
-          room: res.roomId?.roomNumber ? `Room ${res.roomId.roomNumber}` : 'Unknown',
+          room: res.roomId?.roomNumber
+            ? `Room ${res.roomId.roomNumber}`
+            : res.hallId?.hallName
+              ? `Hall: ${res.hallId.hallName}`
+              : 'Unknown',
           checkIn: safeFormat(res.checkInDate),
           checkOut: safeFormat(res.checkOutDate),
           status: res.status?.toLowerCase() || 'completed',
           amount: res.totalPrice || 0, // FIX: was totalAmount, schema uses totalPrice
+          isHall: !!res.hallId,
         })),
       },
       totalReservations: dbData.totalReservations || 0,
       totalPayments: dbData.totalPayments || 0,
       paymentSummary: dbData.paymentSummary || [],
+      recentPayments: (dbData.recentPayments || []).map((p) => ({
+        id: p._id,
+        paymentNumber: p.paymentNumber,
+        amount: p.amount,
+        currency: p.currency || 'ETB',
+        status: p.status,
+        paymentMethod: p.paymentMethod,
+        reservation: p.reservation?.reservationNumber || 'N/A',
+        createdAt: safeFormat(p.createdAt),
+      })),
     };
   },
 

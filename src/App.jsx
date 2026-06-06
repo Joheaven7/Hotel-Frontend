@@ -7,6 +7,7 @@ import ToastProvider from './components/ToastProvider';
 // ── Public pages ──────────────────────────────────────────────────────────────
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import HomePage from './pages/HomePage';
 import NotFoundPage from './pages/NotFoundPage';
 import PaymentCallback from './pages/PaymentCallback';
@@ -107,6 +108,7 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/payment-callback" element={<PaymentCallback />} />
         <Route path="/payment-success" element={<PaymentCallback />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
 
         {/* ── Invoice viewer (full-page, no sidebar) ─────────────────────── */}
         <Route path="/invoices/:paymentId"

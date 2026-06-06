@@ -7,8 +7,9 @@ import {
   FiEye,
   FiEyeOff,
   FiArrowRight,
+  FiArrowLeft,
 } from 'react-icons/fi';
-import { FaGoogle, FaApple, FaFacebookF } from 'react-icons/fa';
+import { FaGoogle, FaApple } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import { showToast } from '../services/toast';
 import apiClient from '../services/api';
@@ -24,8 +25,14 @@ const LoginPage = () => {
   const [socialLoading, setSocialLoading] = useState({
     google: false,
     apple: false,
-    facebook: false,
   });
+
+  // Forgot password state
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotSuccess, setForgotSuccess] = useState(false);
+
   const navigate = useNavigate();
   const location = useLocation();
   const setAuth = useAuthStore((state) => state.setAuth);
@@ -111,6 +118,25 @@ const LoginPage = () => {
     }
   };
 
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    if (!forgotEmail) {
+      showToast.error('Please enter your email address');
+      return;
+    }
+    setForgotLoading(true);
+    try {
+      await apiClient.post('/auth/forgot-password', { email: forgotEmail });
+      setForgotSuccess(true);
+      showToast.success('✅ Password reset link sent to your email');
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || 'Failed to send reset link';
+      showToast.error(`❌ ${errorMessage}`);
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
   const handleSocialLogin = (provider) => {
     setSocialLoading((prev) => ({ ...prev, [provider]: true }));
     window.location.href = `${apiClient.defaults.baseURL}/auth/${provider}`;
@@ -149,135 +175,232 @@ const LoginPage = () => {
           </div>
 
           {/* Auth Toggle Buttons */}
-          <div className="flex rounded-full bg-gray-200 p-1 mb-6 lg:mb-10 shrink-0">
-            <Link
-              to="/login"
-              className={`flex-1 text-center py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${location.pathname === '/login'
-                ? 'bg-black text-white shadow-md'
-                : 'text-gray-600 hover:text-black'
-                }`}
-            >
-              Log In
-            </Link>
-            <Link
-              to="/register"
-              className={`flex-1 text-center py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${location.pathname === '/register'
-                ? 'bg-black text-white shadow-md'
-                : 'text-gray-600 hover:text-black'
-                }`}
-            >
-              Sign Up
-            </Link>
-          </div>
+          {!showForgotPassword && (
+            <div className="flex rounded-full bg-gray-200 p-1 mb-6 lg:mb-10 shrink-0">
+              <Link
+                to="/login"
+                className={`flex-1 text-center py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${location.pathname === '/login'
+                  ? 'bg-black text-white shadow-md'
+                  : 'text-gray-600 hover:text-black'
+                  }`}
+              >
+                Log In
+              </Link>
+              <Link
+                to="/register"
+                className={`flex-1 text-center py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${location.pathname === '/register'
+                  ? 'bg-black text-white shadow-md'
+                  : 'text-gray-600 hover:text-black'
+                  }`}
+              >
+                Sign Up
+              </Link>
+            </div>
+          )}
 
           {/* Scrollable form area */}
           <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin">
-            <h2 className="text-2xl sm:text-3xl font-['Playfair_Display'] font-bold text-gray-900 mb-2">
-              Welcome Back
-            </h2>
-            <p className="text-gray-500 mb-6">Sign in to your luxury concierge account.</p>
 
-            {/* Social Login Buttons */}
-            <div className="flex flex-wrap gap-3 mb-6">
-              <button
-                type="button"
-                onClick={() => handleSocialLogin('google')}
-                disabled={isSocialLoading('google')}
-                className="flex-1 min-w-[80px] flex items-center justify-center gap-2 border border-gray-300 rounded-xl py-3 px-4 text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors disabled:opacity-60 bg-white"
+            {/* ─── Forgot Password Form ─── */}
+            {showForgotPassword ? (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3 }}
               >
-                {isSocialLoading('google') ? (
-                  <span className="inline-block animate-spin">⏳</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowForgotPassword(false);
+                    setForgotSuccess(false);
+                    setForgotEmail('');
+                  }}
+                  className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-black font-medium mb-6 transition-colors"
+                >
+                  <FiArrowLeft size={16} />
+                  Back to login
+                </button>
+
+                <h2 className="text-2xl sm:text-3xl font-['Playfair_Display'] font-bold text-gray-900 mb-2">
+                  Reset Password
+                </h2>
+                <p className="text-gray-500 mb-6">
+                  Enter your email address and we'll send you a link to reset your password.
+                </p>
+
+                {forgotSuccess ? (
+                  <div className="p-4 bg-green-50 border border-green-200 rounded-xl text-center">
+                    <div className="text-3xl mb-2">✉️</div>
+                    <h3 className="text-lg font-semibold text-green-800 mb-1">Check your email</h3>
+                    <p className="text-sm text-green-700">
+                      If an account with that email exists, we've sent a password reset link. Please check your inbox and spam folder.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowForgotPassword(false);
+                        setForgotSuccess(false);
+                        setForgotEmail('');
+                      }}
+                      className="mt-4 text-sm text-green-700 hover:text-green-900 font-medium underline"
+                    >
+                      Return to login
+                    </button>
+                  </div>
                 ) : (
-                  <FaGoogle className="text-red-500" />
+                  <form onSubmit={handleForgotPassword} className="space-y-5">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <FiMail className="inline mr-2 text-gray-400" size={16} />
+                        Email Address
+                      </label>
+                      <input
+                        id="forgot-email-input"
+                        type="email"
+                        value={forgotEmail}
+                        onChange={(e) => setForgotEmail(e.target.value)}
+                        placeholder="your.email@example.com"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3B42]/30 focus:border-transparent transition-all duration-200 text-sm"
+                        required
+                      />
+                    </div>
+
+                    <motion.button
+                      id="forgot-submit-btn"
+                      type="submit"
+                      disabled={forgotLoading}
+                      whileHover={{ scale: 1.01 }}
+                      whileTap={{ scale: 0.99 }}
+                      className="w-full flex items-center justify-center gap-2 bg-black text-white py-3.5 rounded-xl font-semibold text-sm shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-70"
+                    >
+                      {forgotLoading ? (
+                        <>
+                          <span className="inline-block animate-spin">⏳</span>
+                          Sending...
+                        </>
+                      ) : (
+                        <>
+                          Send Reset Link
+                          <FiArrowRight size={18} />
+                        </>
+                      )}
+                    </motion.button>
+                  </form>
                 )}
-                <span className="hidden sm:inline font-['Poppins'] text-gray-600">Google</span>
-              </button>
-            </div>
+              </motion.div>
+            ) : (
+              /* ─── Login Form ─── */
+              <>
+                <h2 className="text-2xl sm:text-3xl font-['Playfair_Display'] font-bold text-gray-900 mb-2">
+                  Welcome Back
+                </h2>
+                <p className="text-gray-500 mb-6">Sign in to your luxury concierge account.</p>
 
-            <div className="flex items-center gap-3 mb-6">
-              <div className="flex-1 h-px bg-gray-300" />
-              <span className="text-xs text-gray-400">or</span>
-              <div className="flex-1 h-px bg-gray-300" />
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <FiMail className="inline mr-2 text-gray-400" size={16} />
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="admin@hotel.com"
-                  className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3B42]/30 focus:border-transparent transition-all duration-200 text-sm"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <FiLock className="inline mr-2 text-gray-400" size={16} />
-                  Password
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    placeholder="••••••••"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3B42]/30 focus:border-transparent transition-all duration-200 text-sm pr-12"
-                    required
-                  />
+                {/* Social Login Buttons */}
+                <div className="flex flex-wrap gap-3 mb-6">
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600"
+                    onClick={() => handleSocialLogin('google')}
+                    disabled={isSocialLoading('google')}
+                    className="flex-1 min-w-[80px] flex items-center justify-center gap-2 border border-gray-300 rounded-xl py-3 px-4 text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors disabled:opacity-60 bg-white"
                   >
-                    {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                    {isSocialLoading('google') ? (
+                      <span className="inline-block animate-spin">⏳</span>
+                    ) : (
+                      <FaGoogle className="text-red-500" />
+                    )}
+                    <span className="hidden sm:inline font-['Poppins'] text-gray-600">Google</span>
                   </button>
                 </div>
-              </div>
 
-              <div className="flex items-center justify-between text-sm">
-                <label className="flex items-center gap-2 text-gray-600">
-                  <input type="checkbox" className="rounded border-gray-300 text-black focus:ring-black" />
-                  Remember me
-                </label>
-                <a href="#" className="text-gray-600 hover:text-black font-medium">
-                  Forgot password?
-                </a>
-              </div>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="flex-1 h-px bg-gray-300" />
+                  <span className="text-xs text-gray-400">or</span>
+                  <div className="flex-1 h-px bg-gray-300" />
+                </div>
 
-              <motion.button
-                type="submit"
-                disabled={loading}
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
-                className="w-full flex items-center justify-center gap-2 bg-black text-white py-3.5 rounded-xl font-semibold text-sm shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-70"
-              >
-                {loading ? (
-                  <>
-                    <span className="inline-block animate-spin">⏳</span>
-                    Signing in...
-                  </>
-                ) : (
-                  <>
-                    Sign In
-                    <FiArrowRight size={18} />
-                  </>
-                )}
-              </motion.button>
-            </form>
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <FiMail className="inline mr-2 text-gray-400" size={16} />
+                      Email Address
+                    </label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      placeholder="admin@hotel.com"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3B42]/30 focus:border-transparent transition-all duration-200 text-sm"
+                      required
+                    />
+                  </div>
 
-            {/* <div className="mt-6 p-4 rounded-xl bg-gray-200 text-center">
-              <p className="text-xs text-gray-500">
-                👤 Demo: <span className="font-medium">admin@hotel.com</span> / <span className="font-medium">password123</span>
-              </p>
-            </div> */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <FiLock className="inline mr-2 text-gray-400" size={16} />
+                      Password
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        name="password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        placeholder="••••••••"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3B42]/30 focus:border-transparent transition-all duration-200 text-sm pr-12"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600"
+                      >
+                        {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-sm">
+                    <label className="flex items-center gap-2 text-gray-600">
+                      <input type="checkbox" className="rounded border-gray-300 text-black focus:ring-black" />
+                      Remember me
+                    </label>
+                    <button
+                      id="forgot-password-link"
+                      type="button"
+                      onClick={() => {
+                        setShowForgotPassword(true);
+                        setForgotEmail(formData.email || '');
+                      }}
+                      className="text-gray-600 hover:text-black font-medium transition-colors"
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
+
+                  <motion.button
+                    type="submit"
+                    disabled={loading}
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                    className="w-full flex items-center justify-center gap-2 bg-black text-white py-3.5 rounded-xl font-semibold text-sm shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-70"
+                  >
+                    {loading ? (
+                      <>
+                        <span className="inline-block animate-spin">⏳</span>
+                        Signing in...
+                      </>
+                    ) : (
+                      <>
+                        Sign In
+                        <FiArrowRight size={18} />
+                      </>
+                    )}
+                  </motion.button>
+                </form>
+              </>
+            )}
           </div>
         </div>
 

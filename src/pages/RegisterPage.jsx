@@ -10,7 +10,7 @@ import {
   FiEyeOff,
   FiArrowRight,
 } from 'react-icons/fi';
-import { FaGoogle, FaApple, FaFacebookF } from 'react-icons/fa';
+import { FaGoogle, FaApple } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import { showToast } from '../services/toast';
 import apiClient from '../services/api';
@@ -28,7 +28,6 @@ const RegisterPage = () => {
   const [socialLoading, setSocialLoading] = useState({
     google: false,
     apple: false,
-    facebook: false,
   });
   const navigate = useNavigate();
   const location = useLocation();
