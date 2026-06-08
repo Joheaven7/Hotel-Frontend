@@ -332,11 +332,11 @@ const RegisterPage = () => {
               </motion.button>
             </form>
 
-            <div className="mt-6 p-4 rounded-xl bg-gray-200 text-center">
+            {/* <div className="mt-6 p-4 rounded-xl bg-gray-200 text-center">
               <p className="text-xs text-gray-500">
                 👤 Demo: <span className="font-medium">guest@hotel.com</span> / <span className="font-medium">password123</span>
               </p>
-            </div>
+            </div> */}
           </div>
         </div>
 
