@@ -1,4 +1,3 @@
-// RegisterPage.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -9,14 +8,19 @@ import {
   FiEye,
   FiEyeOff,
   FiArrowRight,
+  FiArrowLeft,
 } from 'react-icons/fi';
-import { FaGoogle, FaApple } from 'react-icons/fa';
+import { FaGoogle } from 'react-icons/fa';
 import { motion } from 'framer-motion';
+import { Sun, Moon } from 'lucide-react';
 import { showToast } from '../services/toast';
 import apiClient from '../services/api';
 import { useAuthStore } from '../store/authStore';
+import { useThemeStore } from '../store/themeStore';
+import ThemeToggle from '../components/common/ThemeToggle';
 
 const RegisterPage = () => {
+  const { theme, toggleTheme } = useThemeStore();
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -69,7 +73,7 @@ const RegisterPage = () => {
       try {
         const decodedUser = JSON.parse(decodeURIComponent(urlUserRaw));
         setAuth(urlToken, decodedUser);
-        showToast.success('✅ Social signup successful!');
+        showToast.success('Social signup successful!');
         window.history.replaceState({}, document.title, window.location.pathname);
       } catch (e) {
         console.error("Failed to parse social user data", e);
@@ -96,7 +100,9 @@ const RegisterPage = () => {
     if (!validateForm()) return;
 
     setLoading(true);
-    const toastId = toast.loading('Creating your account...');
+    const toastId = toast.loading('Creating your account...', {
+      style: { background: '#111', color: '#fff', border: '1px solid rgba(242,183,5,0.3)' },
+    });
     try {
       const nameParts = (formData.fullName || '').trim().split(' ');
       const firstName = nameParts[0] || '';
@@ -142,234 +148,185 @@ const RegisterPage = () => {
   const isSocialLoading = (provider) => socialLoading[provider];
 
   return (
-    <div
-      className="h-screen overflow-hidden flex items-center justify-center p-4"
-      style={{
-        backgroundImage: "url('https://images.unsplash.com/photo-1540541338287-41700207dee6?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80')",
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-      }}
-    >
-      {/* Dark overlay */}
-      <div className="absolute inset-0 bg-black/50" />
+    <div className="min-h-screen relative flex items-center justify-center p-4 bg-gray-900 selection:bg-[#F2B705]/30 selection:text-white overflow-hidden transition-colors duration-500">
+      
+      {/* ── Background ──────────────────────────────────────────────────────── */}
+      <div 
+        className="absolute inset-0 z-0"
+        style={{
+          backgroundImage: "url('https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=1920&q=60')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        {/* Subtle Overlay instead of heavy blur */}
+        <div className="absolute inset-0 bg-black/30 dark:bg-black/50 transition-colors duration-700" />
+      </div>
 
+      <div className="absolute top-6 right-6 z-20">
+        <ThemeToggle />
+      </div>
+
+      <Link
+        to="/"
+        className="absolute top-6 left-6 z-20 flex items-center gap-2 group hover:opacity-80 transition-all"
+      >
+        <FiArrowLeft className="text-gray-600 dark:text-[#F2B705] group-hover:-translate-x-1 transition-transform" />
+        <span className="font-['Playfair_Display'] text-xl font-bold tracking-widest text-gray-900 dark:text-white uppercase">
+          LUX<span className="text-[#F2B705]">STAY</span>
+        </span>
+      </Link>
+
+      {/* ── Main Glass Card ─────────────────────────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, ease: 'easeOut' }}
-        className="relative w-full max-w-5xl bg-white rounded-[40px] shadow-2xl shadow-black/10 overflow-hidden flex flex-col lg:flex-row max-h-[calc(100vh-2rem)] h-full"
+        transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
+        className="relative z-10 w-full max-w-[480px] p-8 md:p-10 rounded-[32px] bg-white/10 dark:bg-white/5 backdrop-blur-md border border-white/20 shadow-xl"
       >
-        {/* ========== LEFT – Registration Form ========== */}
-        <div className="w-full lg:w-1/2 p-6 sm:p-8 lg:p-14 flex flex-col h-full overflow-hidden bg-gray-100">
-          {/* Branding */}
-          <div className="mb-6 lg:mb-10 shrink-0">
-            <Link to="/" className="inline-block hover:opacity-85 transition-opacity">
-              <h1 className="text-2xl sm:text-3xl font-['Playfair_Display'] font-bold text-gray-900 tracking-tight">
-                LUXSTAY
-              </h1>
-            </Link>
-            <p className="text-sm text-gray-500 mt-1">Luxury Hotels & Resorts</p>
-          </div>
-
-          {/* Auth Toggle Buttons */}
-          <div className="flex rounded-full bg-gray-200 p-1 mb-6 lg:mb-10 shrink-0">
-            <Link
-              to="/login"
-              className={`flex-1 text-center py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${location.pathname === '/login'
-                ? 'bg-black text-white shadow-md'
-                : 'text-gray-600 hover:text-black'
-                }`}
-            >
-              Log In
-            </Link>
-            <Link
-              to="/register"
-              className={`flex-1 text-center py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${location.pathname === '/register'
-                ? 'bg-black text-white shadow-md'
-                : 'text-gray-600 hover:text-black'
-                }`}
-            >
-              Sign Up
-            </Link>
-          </div>
-
-          {/* Scrollable form area */}
-          <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin">
-            <h2 className="text-2xl sm:text-3xl font-['Playfair_Display'] font-bold text-gray-900 mb-2">
-              Journey Begins
-            </h2>
-            <p className="text-gray-500 mb-6">Create your account and unlock exclusive luxury experiences.</p>
-
-            {/* Social Signup Buttons */}
-            <div className="flex flex-wrap gap-3 mb-6">
-              <button
-                type="button"
-                onClick={() => handleSocialSignup('google')}
-                disabled={isSocialLoading('google')}
-                className="flex-1 min-w-[80px] flex items-center justify-center gap-2 border border-gray-300 rounded-xl py-3 px-4 text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors disabled:opacity-60 bg-white"
-              >
-                {isSocialLoading('google') ? (
-                  <span className="inline-block animate-spin">⏳</span>
-                ) : (
-                  <FaGoogle className="text-red-500" />
-                )}
-                <span className="hidden sm:inline">Google</span>
-              </button>
-            </div>
-
-            <div className="flex items-center gap-3 mb-6">
-              <div className="flex-1 h-px bg-gray-300" />
-              <span className="text-xs text-gray-400">or</span>
-              <div className="flex-1 h-px bg-gray-300" />
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <FiUser className="inline mr-2 text-gray-400" size={16} />
-                  Full Name *
-                </label>
-                <input
-                  type="text"
-                  name="fullName"
-                  value={formData.fullName}
-                  onChange={handleChange}
-                  placeholder="John Doe"
-                  className={`w-full px-4 py-3 rounded-xl border bg-white ${errors.fullName ? 'border-red-400 bg-red-50' : 'border-gray-300'
-                    } focus:outline-none focus:ring-2 focus:ring-[#0B3B42]/30 focus:border-transparent transition-all duration-200 text-sm`}
-                />
-                {errors.fullName && (
-                  <p className="text-red-500 text-xs mt-1">{errors.fullName}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <FiMail className="inline mr-2 text-gray-400" size={16} />
-                  Email Address *
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="john@example.com"
-                  className={`w-full px-4 py-3 rounded-xl border bg-white ${errors.email ? 'border-red-400 bg-red-50' : 'border-gray-300'
-                    } focus:outline-none focus:ring-2 focus:ring-[#0B3B42]/30 focus:border-transparent transition-all duration-200 text-sm`}
-                />
-                {errors.email && (
-                  <p className="text-red-500 text-xs mt-1">{errors.email}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <FiLock className="inline mr-2 text-gray-400" size={16} />
-                  Password *
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    placeholder="••••••••"
-                    className={`w-full px-4 py-3 rounded-xl border pr-12 bg-white ${errors.password ? 'border-red-400 bg-red-50' : 'border-gray-300'
-                      } focus:outline-none focus:ring-2 focus:ring-[#0B3B42]/30 focus:border-transparent transition-all duration-200 text-sm`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600"
-                  >
-                    {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
-                  </button>
-                </div>
-                {errors.password ? (
-                  <p className="text-red-500 text-xs mt-1">{errors.password}</p>
-                ) : (
-                  <p className="text-gray-400 text-xs mt-1">At least 6 characters</p>
-                )}
-              </div>
-
-              <div className="flex items-start gap-3 pt-2">
-                <input
-                  type="checkbox"
-                  id="terms"
-                  className="mt-1 rounded border-gray-300 text-black focus:ring-black"
-                  required
-                />
-                <label htmlFor="terms" className="text-xs text-gray-500">
-                  I agree to the{' '}
-                  <a href="#" className="text-gray-900 font-medium hover:underline">
-                    Terms & Conditions
-                  </a>{' '}
-                  and{' '}
-                  <a href="#" className="text-gray-900 font-medium hover:underline">
-                    Privacy Policy
-                  </a>
-                </label>
-              </div>
-
-              <motion.button
-                type="submit"
-                disabled={loading}
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
-                className="w-full flex items-center justify-center gap-2 bg-black text-white py-3.5 rounded-xl font-semibold text-sm shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-70"
-              >
-                {loading ? (
-                  <>
-                    <span className="inline-block animate-spin">⏳</span>
-                    Creating account...
-                  </>
-                ) : (
-                  <>
-                    Create Account
-                    <FiArrowRight size={18} />
-                  </>
-                )}
-              </motion.button>
-            </form>
-
-            {/* <div className="mt-6 p-4 rounded-xl bg-gray-200 text-center">
-              <p className="text-xs text-gray-500">
-                👤 Demo: <span className="font-medium">guest@hotel.com</span> / <span className="font-medium">password123</span>
-              </p>
-            </div> */}
-          </div>
-        </div>
-
-        {/* ========== RIGHT – Immersive Image Panel ========== */}
-        <div className="relative w-full lg:w-1/2 h-48 sm:h-64 lg:h-full bg-gradient-to-br from-[#0F5B4F] to-[#0A3D34] overflow-hidden order-first lg:order-last">
-          <img
-            src="https://images.unsplash.com/photo-1540541338287-41700207dee6?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80"
-            alt="Luxury Travel"
-            className="absolute inset-0 w-full h-full object-cover opacity-70"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/30 to-transparent" />
-
-          <div className="absolute bottom-4 sm:bottom-8 left-4 sm:left-8 right-4 sm:right-8 text-white">
-            <h3 className="text-lg sm:text-2xl md:text-3xl font-['Playfair_Display'] font-bold leading-tight">
-              Escape the Ordinary,<br />Embrace the Journey!
-            </h3>
-            <Link
-              to="/gallery"
-              className="mt-2 sm:mt-4 inline-block px-4 sm:px-6 py-1.5 sm:py-2 bg-white/20 backdrop-blur-sm border border-white/30 rounded-full text-xs sm:text-sm font-medium text-white hover:bg-white/30 transition-all"
-            >
-              Discover More
-            </Link>
-          </div>
-
+        {/* Auth Toggle */}
+        <div className="flex bg-gray-100/50 dark:bg-black/40 rounded-full p-1 mb-8 border border-gray-200/50 dark:border-white/5 transition-colors duration-500">
           <Link
-            to="/"
-            state={{ from: null }}
-            className="absolute top-4 sm:top-6 right-4 sm:right-6 z-20 inline-flex items-center gap-1.5 text-white/90 hover:text-white text-xs sm:text-sm font-medium transition-all backdrop-blur-md bg-black/35 px-4 py-2 rounded-full border border-white/20 shadow-lg"
+            to="/login"
+            className="flex-1 text-center py-2.5 rounded-full text-xs font-['Inter'] tracking-widest uppercase font-semibold transition-all duration-300 text-gray-500 dark:text-white/50 hover:text-gray-900 dark:hover:text-white"
           >
-            <FiArrowRight className="rotate-180" size={14} />
-            Back to Home
+            Log In
+          </Link>
+          <Link
+            to="/register"
+            className="flex-1 text-center py-2.5 rounded-full text-xs font-['Inter'] tracking-widest uppercase font-semibold transition-all duration-300 bg-[#F2B705] text-[#0A0A0A] shadow-sm"
+          >
+            Sign Up
           </Link>
         </div>
+
+        <h2 className="text-3xl font-['Playfair_Display'] font-bold text-gray-900 dark:text-white mb-2">
+          Journey Begins
+        </h2>
+        <p className="font-['Inter'] text-gray-600 dark:text-white/50 text-sm mb-8">
+          Create an account to unlock exclusive experiences.
+        </p>
+
+        {/* Social Signup */}
+        <button
+          type="button"
+          onClick={() => handleSocialSignup('google')}
+          disabled={isSocialLoading('google')}
+          className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl bg-white/50 dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:bg-white dark:hover:bg-white/10 hover:border-gray-300 dark:hover:border-white/20 transition-all text-gray-900 dark:text-white font-['Inter'] text-sm font-medium disabled:opacity-50"
+        >
+          {isSocialLoading('google') ? 'Loading...' : <><FaGoogle className="text-gray-900 dark:text-white" size={16} /> Continue with Google</>}
+        </button>
+
+        <div className="flex items-center gap-4 my-8">
+          <div className="flex-1 h-px bg-gray-200 dark:bg-white/10" />
+          <span className="font-['Inter'] text-[10px] tracking-widest uppercase text-gray-400 dark:text-white/30">Or</span>
+          <div className="flex-1 h-px bg-gray-200 dark:bg-white/10" />
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-20">
+                <FiUser className={`transition-colors duration-300 ${errors.fullName ? 'text-red-500' : 'text-gray-400 dark:text-white/40 group-focus-within:text-[#F2B705]'}`} size={18} />
+              </div>
+              <input
+                type="text"
+                name="fullName"
+                id="register-fullName"
+                value={formData.fullName}
+                onChange={handleChange}
+                placeholder=" "
+                className={`peer block w-full h-[56px] pl-11 pr-4 pt-5 pb-1 rounded-2xl bg-white dark:bg-white/10 border ${errors.fullName ? 'border-red-500 focus:ring-red-500/10 focus:border-red-500' : 'border-gray-200 dark:border-white/10 focus:ring-[#F2B705]/10 focus:border-[#F2B705]'} text-gray-900 dark:text-white focus:outline-none focus:ring-4 transition-all text-sm font-medium shadow-sm`}
+              />
+              <label
+                htmlFor="register-fullName"
+                className={`absolute text-sm font-['Inter'] duration-300 transform -translate-y-1.5 scale-[0.8] top-4 z-10 origin-[0] left-11 ${errors.fullName ? 'text-red-500' : 'text-gray-500 dark:text-white/50 peer-focus:text-[#F2B705]'} peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0.5 peer-focus:scale-[0.8] peer-focus:-translate-y-1.5 cursor-text pointer-events-none`}
+              >
+                Full Name
+              </label>
+            </div>
+            {errors.fullName && <p className="text-red-500 dark:text-red-400 text-xs mt-1.5 pl-4 font-['Inter']">{errors.fullName}</p>}
+          </div>
+
+          <div>
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-20">
+                <FiMail className={`transition-colors duration-300 ${errors.email ? 'text-red-500' : 'text-gray-400 dark:text-white/40 group-focus-within:text-[#F2B705]'}`} size={18} />
+              </div>
+              <input
+                type="email"
+                name="email"
+                id="register-email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder=" "
+                className={`peer block w-full h-[56px] pl-11 pr-4 pt-5 pb-1 rounded-2xl bg-white dark:bg-white/10 border ${errors.email ? 'border-red-500 focus:ring-red-500/10 focus:border-red-500' : 'border-gray-200 dark:border-white/10 focus:ring-[#F2B705]/10 focus:border-[#F2B705]'} text-gray-900 dark:text-white focus:outline-none focus:ring-4 transition-all text-sm font-medium shadow-sm`}
+              />
+              <label
+                htmlFor="register-email"
+                className={`absolute text-sm font-['Inter'] duration-300 transform -translate-y-1.5 scale-[0.8] top-4 z-10 origin-[0] left-11 ${errors.email ? 'text-red-500' : 'text-gray-500 dark:text-white/50 peer-focus:text-[#F2B705]'} peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0.5 peer-focus:scale-[0.8] peer-focus:-translate-y-1.5 cursor-text pointer-events-none`}
+              >
+                Email Address
+              </label>
+            </div>
+            {errors.email && <p className="text-red-500 dark:text-red-400 text-xs mt-1.5 pl-4 font-['Inter']">{errors.email}</p>}
+          </div>
+
+          <div>
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-20">
+                <FiLock className={`transition-colors duration-300 ${errors.password ? 'text-red-500' : 'text-gray-400 dark:text-white/40 group-focus-within:text-[#F2B705]'}`} size={18} />
+              </div>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                name="password"
+                id="register-password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder=" "
+                className={`peer block w-full h-[56px] pl-11 pr-12 pt-5 pb-1 rounded-2xl bg-white dark:bg-white/10 border ${errors.password ? 'border-red-500 focus:ring-red-500/10 focus:border-red-500' : 'border-gray-200 dark:border-white/10 focus:ring-[#F2B705]/10 focus:border-[#F2B705]'} text-gray-900 dark:text-white focus:outline-none focus:ring-4 transition-all text-sm font-medium shadow-sm`}
+              />
+              <label
+                htmlFor="register-password"
+                className={`absolute text-sm font-['Inter'] duration-300 transform -translate-y-1.5 scale-[0.8] top-4 z-10 origin-[0] left-11 ${errors.password ? 'text-red-500' : 'text-gray-500 dark:text-white/50 peer-focus:text-[#F2B705]'} peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0.5 peer-focus:scale-[0.8] peer-focus:-translate-y-1.5 cursor-text pointer-events-none`}
+              >
+                Password
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/40 hover:text-[#F2B705] dark:hover:text-[#F2B705] transition-colors z-20"
+              >
+                {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+              </button>
+            </div>
+            {errors.password ? (
+              <p className="text-red-500 dark:text-red-400 text-xs mt-1.5 pl-1">{errors.password}</p>
+            ) : (
+              <p className="text-gray-500 dark:text-white/30 text-[10px] mt-1.5 pl-1 tracking-wide">At least 6 characters</p>
+            )}
+          </div>
+
+          <div className="flex items-start gap-3 mt-4 mb-8">
+            <input
+              type="checkbox"
+              id="terms"
+              className="mt-1 rounded border-gray-300 dark:border-white/20 bg-white/50 dark:bg-white/5 text-[#F2B705] focus:ring-[#F2B705] focus:ring-offset-0"
+              required
+            />
+            <label htmlFor="terms" className="text-xs text-gray-500 dark:text-white/40 font-['Inter'] leading-relaxed">
+              I agree to the <a href="#" className="text-[#F2B705] hover:text-yellow-600 dark:hover:text-white transition-colors">Terms & Conditions</a> and <a href="#" className="text-[#F2B705] hover:text-yellow-600 dark:hover:text-white transition-colors">Privacy Policy</a>
+            </label>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full relative overflow-hidden flex items-center justify-center gap-3 bg-[#F2B705] text-[#0A0A0A] font-['Inter'] font-bold text-xs tracking-widest uppercase py-4 rounded-full shadow-glow-gold transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            {loading ? 'Creating...' : <>Create Account <FiArrowRight size={16} /></>}
+          </button>
+        </form>
       </motion.div>
     </div>
   );

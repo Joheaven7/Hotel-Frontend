@@ -1,654 +1,418 @@
-// LuxuryGalleryPage.jsx
-import React, { useState, useEffect } from 'react';
-import toast from 'react-hot-toast';
+import React, { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { X, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react';
 import Navbar from './Navbar';
-import { motion } from 'framer-motion';
-import {
-  Star,
-  Wifi,
-  Wind,
-  Tv,
-  Waves,
-  Coffee,
-  Phone,
-  Mail,
-  MapPin,
-} from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { showToast } from '../../services/toast';
+import Footer from './Footer';
 import apiClient from '../../services/api';
-import { useAuthStore } from '../../store/authStore';
+import { useThemeStore } from '../../store/themeStore';
 
-// ---------- STATIC FALLBACK DATA (used when API returns empty) ----------
-const staticRooms = [
-  {
-    id: 'static-1',
-    title: 'Deluxe Room',
-    description: 'Spacious room with a king‑size bed, elegant décor, and garden views.',
-    pricePerNight: 120,
-    rating: 4.5,
-    image: 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=600&q=80',
-    amenities: ['wifi', 'ac', 'tv', 'pool', 'breakfast'],
-    type: 'Deluxe',
-  },
-  {
-    id: 'static-2',
-    title: 'Executive Suite',
-    description: 'Separate living area, premium amenities, and panoramic city skyline.',
-    pricePerNight: 220,
-    rating: 4.8,
-    image: 'https://images.unsplash.com/photo-1591088398332-8a7791972843?auto=format&fit=crop&w=600&q=80',
-    amenities: ['wifi', 'ac', 'tv', 'breakfast'],
-    type: 'Executive',
-  },
-  {
-    id: 'static-3',
-    title: 'Presidential Suite',
-    description: 'Ultimate luxury with a private terrace, butler service, and jacuzzi.',
-    pricePerNight: 550,
-    rating: 5,
-    image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=600&q=80',
-    amenities: ['wifi', 'ac', 'tv', 'pool', 'breakfast'],
-    type: 'Presidential',
-  },
-  {
-    id: 'static-4',
-    title: 'Family Room',
-    description: 'Two queen beds, kid‑friendly amenities, and a spacious bathroom.',
-    pricePerNight: 180,
-    rating: 4.6,
-    image: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=600&q=80',
-    amenities: ['wifi', 'ac', 'tv', 'breakfast'],
-    type: 'Family',
-  },
-  {
-    id: 'static-5',
-    title: 'Honeymoon Suite',
-    description: 'Romantic setup with a canopy bed, rose petals, and champagne on arrival.',
-    pricePerNight: 350,
-    rating: 4.9,
-    image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=600&q=80',
-    amenities: ['wifi', 'ac', 'tv', 'pool', 'breakfast'],
-    type: 'Honeymoon',
-  },
-  {
-    id: 'static-6',
-    title: 'Ocean View Room',
-    description: 'Wake up to breathtaking ocean views and enjoy a private balcony.',
-    pricePerNight: 280,
-    rating: 4.7,
-    image: 'https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=600&q=80',
-    amenities: ['wifi', 'ac', 'tv', 'pool', 'breakfast'],
-    type: 'OceanView',
-  },
+// ── Static fallback data (beautiful Unsplash images per category) ──────────────
+const fallbackImages = [
+  // ROOMS
+  { id: 'f1', src: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=1200&q=80', alt: 'Deluxe Room', category: 'ROOMS' },
+  { id: 'f2', src: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800&q=75&auto=format', alt: 'Garden Terrace Room', category: 'ROOMS' },
+  { id: 'f3', src: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=800&q=75&auto=format', alt: 'Classic Double Room', category: 'ROOMS' },
+  // SUITES
+  { id: 'f4', src: 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=800&q=75&auto=format', alt: 'Executive Suite', category: 'SUITES' },
+  { id: 'f5', src: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&q=75&auto=format', alt: 'Presidential Suite', category: 'SUITES' },
+  { id: 'f6', src: 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800&q=75&auto=format', alt: 'Royal Suite Lounge', category: 'SUITES' },
+  // HALLS
+  { id: 'f7', src: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=800&q=75&auto=format', alt: 'Grand Wedding Hall', category: 'HALLS' },
+  { id: 'f8', src: 'https://images.unsplash.com/photo-1431540015161-0bf868a2d407?w=800&q=75&auto=format', alt: 'Conference Center', category: 'HALLS' },
+  { id: 'f9', src: 'https://images.unsplash.com/photo-1530103862676-de8892ebe829?w=800&q=75&auto=format', alt: 'Royal Banquet Hall', category: 'HALLS' },
+  // AMENITIES
+  { id: 'f10', src: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800&q=75&auto=format', alt: 'Rooftop Pool', category: 'AMENITIES' },
+  { id: 'f11', src: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=800&q=75&auto=format', alt: 'Luxury Spa', category: 'AMENITIES' },
+  { id: 'f12', src: 'https://images.unsplash.com/photo-1600334089648-b0d9d3028eb2?w=800&q=75&auto=format', alt: 'Fitness Center', category: 'AMENITIES' },
+  // DINING
+  { id: 'f13', src: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&q=75&auto=format', alt: 'Fine Dining', category: 'DINING' },
+  { id: 'f14', src: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&q=75&auto=format', alt: 'Restaurant Interior', category: 'DINING' },
+  { id: 'f15', src: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&q=75&auto=format', alt: 'Rooftop Bar', category: 'DINING' },
+  // ALL (general hotel showcase)
+  { id: 'f16', src: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&q=75&auto=format', alt: 'Hotel Exterior', category: 'ALL' },
+  { id: 'f17', src: 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800&q=75&auto=format', alt: 'Grand Lobby', category: 'ALL' },
 ];
 
-const staticHalls = [
-  {
-    id: 'static-h1',
-    title: 'Grand Wedding Hall',
-    capacity: 'Up to 300 guests',
-    description: 'A magnificent ballroom with crystal chandeliers and a private garden entrance.',
-    pricePerHour: 450,
-    image: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    id: 'static-h2',
-    title: 'Executive Conference Hall',
-    capacity: 'Up to 120 guests',
-    description: 'State‑of‑the‑art AV equipment, soundproofing, and ergonomic seating.',
-    pricePerHour: 300,
-    image: 'https://images.unsplash.com/photo-1517502884422-41eaaced0168?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    id: 'static-h3',
-    title: 'Royal Banquet Hall',
-    capacity: 'Up to 200 guests',
-    description: 'Elegant dining space with a live kitchen and gold‑accented interiors.',
-    pricePerHour: 380,
-    image: 'https://images.unsplash.com/photo-1469371670807-013ccf25f16a?auto=format&fit=crop&w=800&q=80',
-  },
-];
+const filters = ['ALL', 'ROOMS', 'SUITES', 'HALLS', 'AMENITIES', 'DINING'];
 
-// ---------- UTILITY ICONS ----------
-const amenityIcons = {
-  wifi: <Wifi size={16} />,
-  ac: <Wind size={16} />,
-  tv: <Tv size={16} />,
-  pool: <Waves size={16} />,
-  breakfast: <Coffee size={16} />,
+// Resolve backend image paths to full URLs
+const resolveImageUrl = (path) => {
+  if (!path) return null;
+  if (path.startsWith('http')) return path;
+  const baseUrl = apiClient.defaults.baseURL.replace(/\/api$/, '');
+  return `${baseUrl}/${path.replace(/\\/g, '/')}`;
 };
 
-const galleryImages = [
-  { src: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=600&q=80', alt: 'Hotel Lobby' },
-  { src: 'https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?auto=format&fit=crop&w=600&q=80', alt: 'Swimming Pool' },
-  { src: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80', alt: 'Restaurant' },
-  { src: 'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=600&q=80', alt: 'Rooftop Lounge' },
-  { src: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=600&q=80', alt: 'Spa' },
-  { src: 'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?auto=format&fit=crop&w=600&q=80', alt: 'Wedding Venue' },
-  { src: 'https://images.unsplash.com/photo-1540518614846-7eded433c457?auto=format&fit=crop&w=600&q=80', alt: 'Luxury Room Detail' },
-  { src: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=600&q=80', alt: 'Presidential Suite Lounge' },
-];
+// ── Image item with Blur-Up & 3D tilt ──────────────────────────────────────────
+function GalleryImage({ item, onClick }) {
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+  const [tilted, setTilted] = useState(false);
+  const cardRef = React.useRef(null);
 
-// ---------- GALLERY COMPONENTS ----------
-
-const Hero = () => (
-  <section className="relative w-full h-[70vh] min-h-[500px] overflow-hidden rounded-b-[50px] md:rounded-b-[80px]">
-    <div
-      className="absolute inset-0 bg-cover bg-center"
-      style={{ backgroundImage: 'url(https://picsum.photos/seed/luxuryhotel/1920/1080)' }}
-    />
-    <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/60" />
-
-    <motion.div
-      initial={{ opacity: 0, y: 50 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 1, delay: 0.3 }}
-      className="relative z-10 flex flex-col items-center justify-center h-full text-center px-4"
-    >
-      <h1 className="text-4xl md:text-6xl lg:text-7xl font-['Playfair_Display'] font-bold text-white mb-6 leading-tight">
-        Discover Our <span className="text-[#F2B705]">Luxury</span> Spaces
-      </h1>
-      <p className="text-lg md:text-xl text-gray-200 max-w-2xl mb-8">
-        Experience unparalleled elegance, breathtaking views, and world‑class hospitality at LUXSTAY Hotels.
-      </p>
-      <motion.button
-        whileHover={{ scale: 1.05, boxShadow: '0 10px 25px rgba(242,183,5,0.4)' }}
-        whileTap={{ scale: 0.95 }}
-        onClick={() => document.getElementById('rooms')?.scrollIntoView({ behavior: 'smooth' })}
-        className="bg-[#F2B705] text-[#0F5B4F] px-8 py-3 rounded-full font-['Poppins'] font-semibold text-lg hover:bg-yellow-400 transition-colors shadow-xl cursor-pointer"
-      >
-        Explore Rooms
-      </motion.button>
-    </motion.div>
-  </section>
-);
-
-const RoomCard = ({ room, user, navigate }) => {
-  const handleBookNow = () => {
-    if (!user) {
-      showToast.info('Please login to book a room');
-      navigate('/login');
-      return;
-    }
-    navigate(`/rooms/${room.id || room._id}`);
+  const handleMouseMove = (e) => {
+    if (!cardRef.current) return;
+    const el = cardRef.current;
+    const rect = el.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const cx = rect.width / 2;
+    const cy = rect.height / 2;
+    const rotateX = ((y - cy) / cy) * -8;
+    const rotateY = ((x - cx) / cx) * 8;
+    el.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.02)`;
+    setTilted(true);
   };
 
+  const handleMouseLeave = () => {
+    if (!cardRef.current) return;
+    cardRef.current.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1)';
+    setTilted(false);
+  };
+
+  // Generate low-quality preview URL if it's an Unsplash image
+  const isUnsplash = item.src && item.src.includes('unsplash.com');
+  const previewSrc = isUnsplash 
+    ? item.src.split('?')[0] + '?w=50&q=10'
+    : item.src;
+
+  const finalSrc = error ? fallbackImages[0].src : item.src;
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 50 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.3 }}
-      transition={{ duration: 0.6 }}
-      whileHover={{ y: -10, scale: 1.02 }}
-      className="bg-white rounded-[30px] overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 group border border-gray-100"
+    <div
+      ref={cardRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      onClick={onClick}
+      className="tilt-card relative group rounded-[24px] overflow-hidden cursor-pointer bg-white dark:bg-[#111111] border border-black/5 dark:border-white/5 shadow-soft dark:shadow-card-dark transition-all duration-300 w-full"
+      style={{ willChange: 'transform' }}
     >
-      <div className="relative overflow-hidden h-56 rounded-t-[30px]">
-        <img
-          src={room.images?.[0] || room.image || 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=600&q=80'}
-          alt={room.title}
-          loading="lazy"
-          decoding="async"
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-          onError={(e) => {
-            e.target.src = 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=600&q=80';
+      {/* Image Container */}
+      <div className="relative overflow-hidden h-[280px]">
+        {/* Layer 1: Blurred Preview */}
+        <div 
+          className="absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-700 ease-in-out"
+          style={{ 
+            backgroundImage: `url(${previewSrc})`,
+            filter: 'blur(20px)',
+            transform: 'scale(1.1)',
+            opacity: loaded ? 0 : 1
           }}
         />
-        <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-md rounded-full px-3 py-1 flex items-center space-x-1 shadow-md">
-          <span className="text-sm font-bold text-[#0F5B4F] font-['Poppins']">
-            {room.rating || 4.5}
+
+        {/* Layer 2: Main High-Quality Image */}
+        <img
+          src={finalSrc}
+          alt={item.alt}
+          loading="lazy"
+          onLoad={() => setLoaded(true)}
+          onError={() => {
+            setError(true);
+            setLoaded(true);
+          }}
+          className={`absolute inset-0 w-full h-full object-cover transition-all duration-[1.2s] ease-out group-hover:scale-110 ${
+            loaded ? 'opacity-100' : 'opacity-0'
+          }`}
+        />
+        
+        {/* Shimmer overlay while loading */}
+        {!loaded && (
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse" />
+        )}
+
+        {/* Dark bottom gradient for contrast */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60" />
+
+        {/* Gold glow border on hover */}
+        <div
+          className="absolute inset-0 rounded-t-[24px] transition-all duration-300 pointer-events-none"
+          style={{
+            boxShadow: tilted ? '0 0 0 1.5px rgba(242,183,5,0.5) inset' : '0 0 0 0 transparent inset',
+          }}
+        />
+
+        {/* Top-left Type Badge */}
+        <div className="absolute top-4 left-4 bg-[#F2B705]/15 backdrop-blur-sm border border-[#F2B705]/30 rounded-full px-3 py-1 z-10">
+          <span className="font-['Inter'] text-[#F2B705] text-[10px] tracking-[0.15em] uppercase font-semibold">
+            {item.category}
           </span>
-          <Star size={14} className="fill-[#F2B705] text-[#F2B705]" />
         </div>
       </div>
 
-      <div className="p-6">
-        <h3 className="text-2xl font-['Playfair_Display'] font-bold text-[#0F5B4F] mb-2">
-          {room.title}
+      {/* Card body (Title underneath) */}
+      <div className="p-6 relative">
+        <h3 className="font-['Playfair_Display'] text-text-primary dark:text-white text-xl font-semibold mb-2 group-hover:text-[#F2B705] transition-colors duration-300">
+          {item.alt}
         </h3>
-        <p className="text-[#333333] text-sm mb-4 line-clamp-2 font-['Poppins']">
-          {room.type || room.title} Room - {room.description || 'Luxurious accommodation'}
-        </p>
-
-        <div className="flex items-center space-x-3 mb-4 text-[#0F5B4F]">
-          {room.amenities?.length > 0
-            ? room.amenities.map((a) => (
-              <span key={a} title={a}>
-                {amenityIcons[a.toLowerCase()] || <Wifi size={16} />}
-              </span>
-            ))
-            : [amenityIcons.wifi, amenityIcons.ac, amenityIcons.tv]}
+        
+        <div className="flex items-center gap-2 text-text-secondary dark:text-white/50 font-['Inter'] text-xs tracking-widest uppercase mt-4">
+          <Maximize2 size={12} className="text-[#F2B705]" />
+          <span>View Image</span>
         </div>
-
-        <div className="flex items-center justify-between">
-          <div>
-            <span className="text-2xl font-bold text-[#F2B705] font-['Poppins']">
-              ${room.pricePerNight || room.price}
-            </span>
-            <span className="text-sm text-gray-500 font-['Poppins']"> / Night</span>
-          </div>
-          <motion.button
-            onClick={handleBookNow}
-            whileHover={{ scale: 1.05, boxShadow: '0 4px 15px rgba(15,91,79,0.4)' }}
-            whileTap={{ scale: 0.95 }}
-            className="bg-[#0F5B4F] text-white px-6 py-2.5 rounded-full text-sm font-medium hover:bg-[#0d4a40] transition-colors shadow-md cursor-pointer font-['Poppins']"
-          >
-            Book Now
-          </motion.button>
-        </div>
+        
+        {/* Gold glow border for bottom half on hover */}
+        <div
+          className="absolute inset-0 rounded-b-[24px] transition-all duration-300 pointer-events-none"
+          style={{
+            boxShadow: tilted ? '0 0 0 1.5px rgba(242,183,5,0.5) inset' : '0 0 0 0 transparent inset',
+            borderTop: 'none'
+          }}
+        />
       </div>
-    </motion.div>
+    </div>
   );
-};
+}
 
-const RoomsSection = ({ rooms, user, navigate, loading }) => {
-  const [selectedType, setSelectedType] = useState('ALL');
+// ── Main Page Component ────────────────────────────────────────────────────────
+export default function GalleryPage() {
+  const [images, setImages] = useState(fallbackImages);
+  const [filter, setFilter] = useState('ALL');
+  const [lightboxIndex, setLightboxIndex] = useState(null);
+  const theme = useThemeStore((s) => s.theme);
 
-  // Use static rooms only when API returns empty and loading is finished
-  const baseRooms = rooms.length > 0 ? rooms : !loading ? staticRooms : [];
+  // Filter images
+  const displayImages = images.filter((img) => filter === 'ALL' || img.category === filter);
 
-  // Filter rooms on-the-fly based on selected category type
-  const displayRooms = baseRooms.filter((room) => {
-    if (selectedType === 'ALL') return true;
-    const rType = (room.type || room.title || '').toUpperCase();
-    return rType.includes(selectedType);
-  });
+  // Fetch API images and merge with fallbacks
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    Promise.allSettled([
+      apiClient.get('/room-types/public'),
+      apiClient.get('/hall-types/public')
+    ]).then(([roomRes, hallRes]) => {
+      let apiImages = [];
 
-  const categories = ['ALL', 'SINGLE', 'DOUBLE', 'DELUXE', 'SUITE'];
+      if (roomRes.status === 'fulfilled') {
+        (roomRes.value.data.roomTypes || []).forEach((rt, i) => {
+          (rt.images || []).forEach((imgPath, j) => {
+            const resolvedUrl = resolveImageUrl(imgPath);
+            // Only use images that are full http URLs (uploaded to cloud/CDN)
+            if (resolvedUrl && resolvedUrl.startsWith('http')) {
+              apiImages.push({
+                id: `api-r-${i}-${j}`,
+                src: resolvedUrl,
+                alt: rt.name,
+                category: rt.name.toLowerCase().includes('suite') ? 'SUITES' : 'ROOMS'
+              });
+            }
+          });
+        });
+      }
+
+      if (hallRes.status === 'fulfilled') {
+        (hallRes.value.data.hallTypes || []).forEach((ht, i) => {
+          (ht.images || []).forEach((imgPath, j) => {
+            const resolvedUrl = resolveImageUrl(imgPath);
+            if (resolvedUrl && resolvedUrl.startsWith('http')) {
+              apiImages.push({
+                id: `api-h-${i}-${j}`,
+                src: resolvedUrl,
+                alt: ht.name,
+                category: 'HALLS'
+              });
+            }
+          });
+        });
+      }
+
+      // Always keep fallbacks to ensure every category has images.
+      // API images are added on top of the fallbacks.
+      if (apiImages.length > 0) {
+        // Deduplicate: remove fallbacks for categories that now have real API images
+        const apiCategories = new Set(apiImages.map(img => img.category));
+        const keptFallbacks = fallbackImages.filter(f => !apiCategories.has(f.category));
+        setImages([...apiImages, ...keptFallbacks]);
+      }
+      // If no API images, fallbackImages stay as the default (set in useState init)
+    });
+  }, []);
+
+  // Lightbox keyboard nav
+  const handleKeyDown = useCallback((e) => {
+    if (lightboxIndex === null) return;
+    if (e.key === 'Escape') setLightboxIndex(null);
+    if (e.key === 'ArrowRight') setLightboxIndex((prev) => (prev + 1) % displayImages.length);
+    if (e.key === 'ArrowLeft') setLightboxIndex((prev) => (prev - 1 + displayImages.length) % displayImages.length);
+  }, [lightboxIndex, displayImages.length]);
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
+
+  // Lock body scroll when lightbox is open
+  useEffect(() => {
+    if (lightboxIndex !== null) document.body.style.overflow = 'hidden';
+    else document.body.style.overflow = 'unset';
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [lightboxIndex]);
 
   return (
-    <section id="rooms" className="py-24 bg-[#F5F5F2]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="text-center mb-10"
-        >
-          <h2 className="text-4xl md:text-5xl font-['Playfair_Display'] font-bold text-[#0F5B4F] mb-4">
-            Luxury Rooms & Suites
-          </h2>
-          <div className="w-20 h-1 bg-[#F2B705] mx-auto mb-6 rounded-full" />
-          <p className="text-lg text-[#333333] max-w-2xl mx-auto font-['Poppins']">
-            Each room is a sanctuary of comfort and style, designed to provide an unforgettable stay.
-          </p>
-        </motion.div>
+    <div className="min-h-screen bg-background dark:bg-[#0A0A0A] font-sans selection:bg-[#F2B705]/30 selection:text-white flex flex-col transition-colors duration-300">
+      <Navbar />
 
-        {/* Dynamic Category Filters */}
-        <div className="flex flex-wrap justify-center gap-3 mb-12">
-          {categories.map((cat) => (
-            <motion.button
-              key={cat}
-              onClick={() => setSelectedType(cat)}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className={`px-6 py-2.5 rounded-full font-['Poppins'] font-semibold text-sm tracking-wide transition-all duration-300 shadow-sm cursor-pointer ${selectedType === cat
-                ? 'bg-[#0F5B4F] text-white shadow-[#0F5B4F]/20'
-                : 'bg-white text-[#0F5B4F] hover:bg-gray-100 border border-gray-200/50'
+      {/* ── Cinematic Hero ──────────────────────────────────────────────────── */}
+      <section className="relative w-full pt-32 pb-16 md:pt-40 md:pb-24 flex items-center justify-center overflow-hidden border-b border-black/5 dark:border-white/10">
+        <div className="absolute inset-0 bg-gradient-to-b from-background dark:from-[#0A0A0A] to-transparent z-10" />
+        <div className="relative z-20 text-center px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+          >
+            <span className="font-['Inter'] text-[#F2B705] text-xs tracking-[0.3em] uppercase mb-4 block">
+              Visual Journey
+            </span>
+            <h1 className="font-['Playfair_Display'] font-bold text-text-primary dark:text-white text-5xl md:text-6xl lg:text-7xl mb-6">
+              Our World, <span className="italic font-light">Your Canvas</span>
+            </h1>
+            <div className="flex items-center justify-center gap-3 text-text-secondary/60 dark:text-white/50 text-xs font-['Inter'] tracking-widest uppercase">
+              <span>Home</span>
+              <span className="w-1 h-1 rounded-full bg-[#F2B705]" />
+              <span className="text-[#0F5B4F] dark:text-white">Gallery</span>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ── Stats Bar ───────────────────────────────────────────────────────── */}
+      <div className="w-full bg-black/[0.02] dark:bg-white/[0.02] border-b border-black/5 dark:border-white/10 transition-colors duration-300">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-wrap items-center justify-center gap-8 md:gap-16">
+            {[
+              { num: '247', label: 'Rooms' },
+              { num: '12', label: 'Event Spaces' },
+              { num: '5', label: 'Dining Venues' },
+              { num: '1', label: 'Rooftop Pool' }
+            ].map((stat, i) => (
+              <motion.div
+                key={stat.label}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 + 0.5 }}
+                className="flex items-center gap-3"
+              >
+                <span className="font-['Playfair_Display'] text-2xl font-bold text-[#F2B705]">{stat.num}</span>
+                <span className="font-['Inter'] text-text-secondary dark:text-white/60 text-xs tracking-widest uppercase">{stat.label}</span>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Filter Bar ──────────────────────────────────────────────────────── */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="flex flex-wrap justify-center gap-3">
+          {filters.map((f) => (
+            <button
+              key={f}
+              onClick={() => { setFilter(f); setLightboxIndex(null); }}
+              className={`filter-pill font-['Inter'] text-xs font-semibold tracking-widest uppercase px-6 py-2.5 rounded-full border transition-all duration-300 ${filter === f
+                  ? 'active'
+                  : 'text-text-secondary border-black/10 hover:border-[#0F5B4F] hover:text-[#0F5B4F] dark:text-white/60 dark:border-white/10 dark:hover:border-white/30 dark:hover:text-white'
                 }`}
             >
-              {cat === 'ALL' ? 'All Spaces' : `${cat.charAt(0) + cat.slice(1).toLowerCase()} Rooms`}
-            </motion.button>
+              <span className="relative z-10">{f}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Masonry Grid ────────────────────────────────────────────────────── */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-32 flex-grow">
+        <div className="masonry-grid">
+          {displayImages.map((img, idx) => (
+            <div key={img.id} className="masonry-item">
+              <GalleryImage item={img} onClick={() => setLightboxIndex(idx)} />
+            </div>
           ))}
         </div>
 
-        {loading ? (
-          <div className="text-center py-12">
-            <p className="text-[#333333] font-['Poppins']">⏳ Loading rooms...</p>
-          </div>
-        ) : displayRooms.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {displayRooms.map((room) => (
-              <RoomCard key={room._id || room.id} room={room} user={user} navigate={navigate} />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-12 bg-white rounded-3xl shadow-md p-8">
-            <p className="text-[#333333] font-['Poppins'] text-lg">No rooms matching "{selectedType}" available at the moment</p>
+        {displayImages.length === 0 && (
+          <div className="text-center py-20 text-text-secondary dark:text-white/50 font-['Inter']">
+            No images found for this category.
           </div>
         )}
       </div>
-    </section>
-  );
-};
 
-const HallCard = ({ hall, user, navigate }) => {
-  const handleBookNow = () => {
-    if (!user) {
-      showToast.info('Please login to book a hall');
-      navigate('/login');
-      return;
-    }
-    navigate(`/halls/${hall.id || hall._id}`);
-  };
+      <Footer />
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: -50 }}
-      whileInView={{ opacity: 1, x: 0 }}
-      viewport={{ once: true, amount: 0.3 }}
-      transition={{ duration: 0.6 }}
-      whileHover={{ y: -8 }}
-      className="bg-white rounded-[30px] overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 flex flex-col md:flex-row border border-gray-100"
-    >
-      <div className="md:w-2/5 overflow-hidden rounded-l-[30px] md:rounded-l-[30px] md:rounded-r-none">
-        <img
-          src={hall.images?.[0] || hall.image || 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=800&q=80'}
-          alt={hall.title}
-          loading="lazy"
-          decoding="async"
-          className="w-full h-64 md:h-full object-cover transition-transform duration-700 hover:scale-110"
-          onError={(e) => {
-            e.target.src = 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=800&q=80';
-          }}
-        />
-      </div>
-      <div className="p-6 md:p-8 flex flex-col justify-center md:w-3/5">
-        <h3 className="text-2xl font-['Playfair_Display'] font-bold text-[#0F5B4F] mb-2">
-          {hall.name || hall.title}
-        </h3>
-        <p className="text-sm text-gray-500 mb-2 flex items-center font-['Poppins']">
-          <span className="inline-block w-2 h-2 bg-[#F2B705] rounded-full mr-2" />
-          {hall.capacity || 'Capacity available'}
-        </p>
-        <p className="text-[#333333] mb-6 font-['Poppins']">
-          {hall.description || 'Premium event space for your special occasions'}
-        </p>
-        <div className="flex items-center justify-between">
-          <div>
-            <span className="text-2xl font-bold text-[#F2B705] font-['Poppins']">
-              ${hall.pricePerHour || hall.price}
-            </span>
-            <span className="text-sm text-gray-500 font-['Poppins']"> / Hour</span>
-          </div>
-          <motion.button
-            onClick={handleBookNow}
-            whileHover={{ scale: 1.05, boxShadow: '0 4px 15px rgba(242,183,5,0.4)' }}
-            whileTap={{ scale: 0.95 }}
-            className="bg-[#F2B705] text-[#0F5B4F] px-6 py-2.5 rounded-full font-semibold text-sm hover:bg-yellow-400 transition-colors shadow-md cursor-pointer font-['Poppins']"
-          >
-            Book Now
-          </motion.button>
-        </div>
-      </div>
-    </motion.div>
-  );
-};
-
-const HallsSection = ({ halls, user, navigate, loading }) => {
-  // Use static halls only when API returns empty and loading is finished
-  const displayHalls = halls.length > 0 ? halls : !loading ? staticHalls : [];
-
-  return (
-    <section id="halls" className="py-24 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="text-center mb-16"
-        >
-          <h2 className="text-4xl md:text-5xl font-['Playfair_Display'] font-bold text-[#0F5B4F] mb-4">
-            Luxury Event Halls
-          </h2>
-          <div className="w-20 h-1 bg-[#F2B705] mx-auto mb-6 rounded-full" />
-          <p className="text-lg text-[#333333] max-w-2xl mx-auto font-['Poppins']">
-            From intimate weddings to grand conferences, our halls set the stage for unforgettable moments.
-          </p>
-        </motion.div>
-
-        {loading ? (
-          <div className="text-center py-12">
-            <p className="text-[#333333] font-['Poppins']">⏳ Loading halls...</p>
-          </div>
-        ) : displayHalls.length > 0 ? (
-          <div className="space-y-8">
-            {displayHalls.map((hall) => (
-              <HallCard key={hall._id || hall.id} hall={hall} user={user} navigate={navigate} />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-12 bg-white rounded-3xl shadow-md p-8">
-            <p className="text-[#333333] font-['Poppins'] text-lg">No event halls available at the moment</p>
-          </div>
-        )}
-      </div>
-    </section>
-  );
-};
-
-const GalleryGrid = () => (
-  <section id="gallery" className="py-24 bg-[#F5F5F2]">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.8 }}
-        className="text-center mb-16"
-      >
-        <h2 className="text-4xl md:text-5xl font-['Playfair_Display'] font-bold text-[#0F5B4F] mb-4">
-          Our Gallery
-        </h2>
-        <div className="w-20 h-1 bg-[#F2B705] mx-auto mb-6 rounded-full" />
-        <p className="text-lg text-[#333333] max-w-2xl mx-auto font-['Poppins']">
-          A visual journey through our stunning spaces and amenities.
-        </p>
-      </motion.div>
-
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-        {galleryImages.map((img, idx) => (
+      {/* ── Fullscreen Lightbox ─────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {lightboxIndex !== null && (
           <motion.div
-            key={idx}
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: idx * 0.1 }}
-            className="overflow-hidden rounded-2xl group cursor-pointer relative shadow-md hover:shadow-xl transition-shadow"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="lightbox-overlay"
+            onClick={() => setLightboxIndex(null)}
           >
-            <img
-              src={img.src}
-              alt={img.alt}
-              loading="lazy"
-              decoding="async"
-              className="w-full h-48 md:h-64 object-cover transition-transform duration-700 group-hover:scale-110"
-              onError={(e) => {
-                e.target.src = 'https://picsum.photos/seed/gallery-fallback/600/400';
+            {/* Close Button */}
+            <button
+              className="absolute top-6 right-6 p-2 text-white/50 hover:text-white bg-black/20 hover:bg-black/50 rounded-full transition-all"
+              onClick={(e) => { e.stopPropagation(); setLightboxIndex(null); }}
+            >
+              <motion.div animate={{ rotate: [90, 0] }} transition={{ duration: 0.3 }}>
+                <X size={24} />
+              </motion.div>
+            </button>
+
+            {/* Counter */}
+            <div className="absolute top-8 left-1/2 -translate-x-1/2 font-['Inter'] text-white/60 tracking-widest text-sm">
+              {lightboxIndex + 1} <span className="text-white/30 mx-1">/</span> {displayImages.length}
+            </div>
+
+            {/* Prev Button */}
+            <button
+              className="absolute left-6 top-1/2 -translate-y-1/2 p-3 text-white/50 hover:text-white bg-black/20 hover:bg-black/50 rounded-full transition-all"
+              onClick={(e) => {
+                e.stopPropagation();
+                setLightboxIndex((prev) => (prev - 1 + displayImages.length) % displayImages.length);
               }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl flex items-end p-4">
-              <span className="text-white text-sm font-medium font-['Poppins']">{img.alt}</span>
+            >
+              <ChevronLeft size={32} />
+            </button>
+
+            {/* Next Button */}
+            <button
+              className="absolute right-6 top-1/2 -translate-y-1/2 p-3 text-white/50 hover:text-white bg-black/20 hover:bg-black/50 rounded-full transition-all"
+              onClick={(e) => {
+                e.stopPropagation();
+                setLightboxIndex((prev) => (prev + 1) % displayImages.length);
+              }}
+            >
+              <ChevronRight size={32} />
+            </button>
+
+            {/* Image Container */}
+            <div className="relative max-w-[90vw] max-h-[85vh] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+              <AnimatePresence mode="wait">
+                <motion.img
+                  key={lightboxIndex}
+                  src={displayImages[lightboxIndex].src}
+                  alt={displayImages[lightboxIndex].alt}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.2 }}
+                  className="lightbox-img"
+                />
+              </AnimatePresence>
+
+              {/* Caption */}
+              <motion.div
+                key={`caption-${lightboxIndex}`}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="absolute -bottom-12 left-0 right-0 text-center font-['Playfair_Display'] text-xl text-white"
+              >
+                {displayImages[lightboxIndex].alt}
+              </motion.div>
             </div>
           </motion.div>
-        ))}
-      </div>
-    </div>
-  </section>
-);
-
-const CTABanner = ({ user, navigate }) => {
-  const handleReserveNow = () => {
-    if (!user) {
-      navigate('/register');
-      return;
-    }
-    navigate('/rooms');
-  };
-
-  return (
-    <section className="py-24 bg-[#0F5B4F] relative overflow-hidden">
-      <div className="absolute -top-20 -right-20 w-72 h-72 bg-[#F2B705] opacity-10 rounded-full blur-3xl" />
-      <div className="absolute -bottom-20 -left-20 w-72 h-72 bg-[#F2B705] opacity-10 rounded-full blur-3xl" />
-
-      <motion.div
-        initial={{ opacity: 0, y: 50 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.8 }}
-        className="max-w-4xl mx-auto text-center px-4"
-      >
-        <h2 className="text-4xl md:text-5xl font-['Playfair_Display'] font-bold text-white mb-6">
-          Book Your Dream Stay Today
-        </h2>
-        <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto font-['Poppins']">
-          Reserve your luxury experience now and enjoy exclusive offers and world‑class service.
-        </p>
-        <motion.button
-          onClick={handleReserveNow}
-          whileHover={{ scale: 1.05, boxShadow: '0 10px 25px rgba(242,183,5,0.08)' }}
-          whileTap={{ scale: 0.95 }}
-          className="bg-[#F2B705] text-[#0F5B4F] px-10 py-4 rounded-full font-bold text-lg hover:bg-yellow-400 transition-colors shadow-2xl inline-flex items-center cursor-pointer font-['Poppins']"
-        >
-          Reserve Now
-        </motion.button>
-      </motion.div>
-    </section>
-  );
-};
-
-const Footer = () => (
-  <footer className="bg-[#0F5B4F] text-white pt-16 pb-8">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-10">
-        <div>
-          <Link to="/" className="text-3xl font-['Playfair_Display'] font-bold text-white mb-4 block hover:opacity-80 transition-opacity">
-            LUXSTAY <span className="text-[#F2B705]">HOTELS</span>
-          </Link>
-          <p className="text-gray-300 text-sm leading-relaxed font-['Poppins']">
-            Experience the pinnacle of luxury hospitality. Every detail is crafted to create unforgettable moments.
-          </p>
-        </div>
-
-        <div>
-          <h4 className="text-xl font-['Playfair_Display'] font-bold text-white mb-5">Quick Links</h4>
-          <ul className="space-y-3">
-            {[
-              { label: 'Home', to: '/' },
-              { label: 'Rooms', to: '#rooms' },
-              { label: 'Events', to: '#halls' },
-              { label: 'Gallery', to: '#gallery' },
-              { label: 'Contact', to: '/#contact' },
-            ].map((link) => (
-              <li key={link.label}>
-                {link.to.startsWith('/') ? (
-                  <Link
-                    to={link.to}
-                    className="text-white/60 hover:text-[#F2B705] transition-colors duration-200 text-sm tracking-wide flex items-center gap-2 group font-['Poppins']"
-                  >
-                    <span className="w-1.5 h-1.5 bg-[#F2B705] rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-                    {link.label}
-                  </Link>
-                ) : (
-                  <a
-                    href={link.to}
-                    className="text-white/60 hover:text-[#F2B705] transition-colors duration-200 text-sm tracking-wide flex items-center gap-2 group font-['Poppins']"
-                  >
-                    <span className="w-1.5 h-1.5 bg-[#F2B705] rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-                    {link.label}
-                  </a>
-                )}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div>
-          <h4 className="text-xl font-['Playfair_Display'] font-bold text-white mb-5">Contact Us</h4>
-          <div className="space-y-4 text-gray-300 text-sm font-['Poppins']">
-            <div className="flex items-center space-x-3">
-              <MapPin size={16} className="text-[#F2B705]" />
-              <span>123 Addis Ababa, Ethiopia</span>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Phone size={16} className="text-[#F2B705]" />
-              <a href="tel:+251907070601" className="hover:text-[#F2B705] transition-colors">
-                +251907070601
-              </a>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Mail size={16} className="text-[#F2B705]" />
-              <a href="mailto:luxstay@hotel.com" className="hover:text-[#F2B705] transition-colors">
-                luxstay@hotel.com
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="border-t border-white/10 pt-8 text-center text-gray-400 text-sm font-['Poppins']">
-        © {new Date().getFullYear()} LUXSTAY Hotels. All rights reserved.
-      </div>
-    </div>
-  </footer>
-);
-
-// ---------- MAIN PAGE COMPONENT ----------
-const LuxuryGalleryPage = () => {
-  const [rooms, setRooms] = useState([]);
-  const [halls, setHalls] = useState([]);
-  const [loadingRooms, setLoadingRooms] = useState(true);
-  const [loadingHalls, setLoadingHalls] = useState(true);
-  const navigate = useNavigate();
-  const user = useAuthStore((state) => state.user);
-
-  useEffect(() => {
-    const fetchPublicData = async () => {
-      try {
-        const [roomRes, hallRes] = await Promise.allSettled([
-          apiClient.get('/room-types/public'),
-          apiClient.get('/hall-types/public'),
-        ]);
-
-        if (roomRes.status === 'fulfilled') {
-          const types = (roomRes.value.data.roomTypes || []).map(rt => ({
-            id: rt._id,
-            title: rt.name,
-            description: rt.description || `Experience our ${rt.name} at its finest.`,
-            pricePerNight: rt.basePricePerNight,
-            capacity: rt.maxOccupancy,
-            amenities: rt.amenities || [],
-            image: rt.images?.[0] || 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=600&q=80',
-          }));
-          if (types.length > 0) setRooms(types);
-        }
-
-        if (hallRes.status === 'fulfilled') {
-          const types = (hallRes.value.data.hallTypes || []).map(ht => ({
-            id: ht._id,
-            title: ht.name,
-            description: ht.description || `Host your event in our ${ht.name}.`,
-            pricePerHour: ht.basePricePerHour,
-            capacity: ht.maxOccupancy,
-            amenities: ht.amenities || [],
-            image: ht.images?.[0] || 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=600&q=80',
-          }));
-          if (types.length > 0) setHalls(types);
-        }
-      } catch (error) {
-        console.error('Error loading fallback static structures:', error);
-      } finally {
-        setLoadingRooms(false);
-        setLoadingHalls(false);
-      }
-    };
-
-    fetchPublicData();
-  }, []);
-
-  return (
-    <div className="font-['Poppins'] bg-[#F5F5F2] min-h-screen">
-      <Navbar />
-      <Hero />
-      <RoomsSection rooms={rooms} user={user} navigate={navigate} loading={loadingRooms} />
-      <HallsSection halls={halls} user={user} navigate={navigate} loading={loadingHalls} />
-      <GalleryGrid />
-      <CTABanner user={user} navigate={navigate} />
-      <Footer />
+        )}
+      </AnimatePresence>
     </div>
   );
-};
-
-export default LuxuryGalleryPage;
+}

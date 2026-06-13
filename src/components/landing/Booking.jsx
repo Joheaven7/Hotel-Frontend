@@ -2,51 +2,31 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
-import { Calendar, Users, BedDouble, ChevronDown } from 'lucide-react';
+import { Calendar, Users, BedDouble, ChevronDown, Search } from 'lucide-react';
 import { showToast } from '../../services/toast';
 import apiClient from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
-
-const containerVariants = {
-  hidden: { opacity: 0, y: 40 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.7, ease: 'easeOut' },
-  },
-};
-
-const inputVariants = {
-  focus: { scale: 1.02, boxShadow: '0 0 0 2px rgba(242,183,5,0.5)' },
-};
+import { useThemeStore } from '../../store/themeStore';
 
 export default function Booking() {
-  const [checkIn, setCheckIn] = useState('');
+  const [checkIn,  setCheckIn]  = useState('');
   const [checkOut, setCheckOut] = useState('');
-  const [guests, setGuests] = useState(1);
+  const [guests,   setGuests]   = useState(1);
   const [roomType, setRoomType] = useState('SINGLE');
-  const [loading, setLoading] = useState(false);
+  const [loading,  setLoading]  = useState(false);
   const navigate = useNavigate();
-  const user = useAuthStore((state) => state.user);
+  const user     = useAuthStore((s) => s.user);
+  const theme    = useThemeStore((s) => s.theme);
 
-  const handleBookNow = async () => {
-    // Validate inputs
+  const handleSearch = async () => {
     if (!checkIn || !checkOut) {
       showToast.error('Please select check-in and check-out dates');
       return;
     }
-
     if (new Date(checkIn) >= new Date(checkOut)) {
       showToast.error('Check-out date must be after check-in date');
       return;
     }
-
-    if (!guests || guests < 1) {
-      showToast.error('Please select number of guests');
-      return;
-    }
-
-    // Check if user is logged in
     if (!user) {
       showToast.info('Please login to book a room');
       navigate('/login');
@@ -54,37 +34,21 @@ export default function Booking() {
     }
 
     setLoading(true);
-    const toastId = toast.loading('Searching for available rooms...', {
-      style: {
-        background: '#6b7280',
-        color: '#fff',
-        borderRadius: '8px',
-        padding: '16px',
-      },
+    const toastId = toast.loading('Searching for available rooms…', {
+      style: { background: '#111', color: '#fff', borderRadius: '12px', border: '1px solid rgba(242,183,5,0.3)' },
     });
 
     try {
       const response = await apiClient.get('/rooms', {
-        params: {
-          checkInDate: checkIn,
-          checkOutDate: checkOut,
-          numberOfGuests: guests,
-          type: roomType,   // FIX: backend reads `type`, not `roomType`
-        },
+        params: { checkInDate: checkIn, checkOutDate: checkOut, numberOfGuests: guests, type: roomType },
       });
-
       toast.dismiss(toastId);
-
-      // Filter to only truly available rooms
       const availableRooms = (response.data.rooms || []).filter(
         (r) => r.isAvailable !== false && r.status === 'AVAILABLE'
       );
-
       if (availableRooms.length > 0) {
         showToast.success(`Found ${availableRooms.length} available room(s)`);
-        navigate('/reservations', {
-          state: { checkIn, checkOut, guests, roomType, availableRooms },
-        });
+        navigate('/reservations', { state: { checkIn, checkOut, guests, roomType, availableRooms } });
       } else {
         showToast.error('No rooms available for the selected dates');
       }
@@ -96,174 +60,178 @@ export default function Booking() {
     }
   };
 
-  const getRoomTypeOptions = () => {
-    return [
-      { value: 'SINGLE', label: 'Single Room' },
-      { value: 'DOUBLE', label: 'Double Room' },
-      { value: 'SUITE', label: 'Suite' },
-      { value: 'DELUXE', label: 'Deluxe Suite' },
-    ];
-  };
+  const roomTypeOptions = [
+    { value: 'SINGLE',  label: 'Single Room'  },
+    { value: 'DOUBLE',  label: 'Double Room'  },
+    { value: 'SUITE',   label: 'Suite'         },
+    { value: 'DELUXE',  label: 'Deluxe Suite' },
+  ];
 
   return (
-    <section id="booking" className="py-16 md:py-24 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="booking" className="relative z-10 py-0">
+      {/* ── Floating glassmorphism card that overlaps the hero ──────────────────── */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 -mt-16 md:-mt-20">
         <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
+          initial={{ opacity: 0, y: 60 }}
+          whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-50px' }}
-          className="bg-[#F5F5F2] rounded-card shadow-soft p-8 md:p-12 border border-[#E8ECE7]"
+          transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="relative rounded-[28px] overflow-hidden bg-white/70 dark:bg-black/40 border border-black/5 dark:border-white/10 shadow-elevated dark:shadow-2xl transition-all duration-300"
+          style={{
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+          }}
         >
-          {/* Section Heading */}
-          <div className="text-center mb-10">
-            <h2 className="font-heading text-3xl sm:text-4xl md:text-5xl font-bold text-text-primary mb-3">
-              Reserve Your <span className="text-gold italic font-serif">Stay</span>
-            </h2>
-            <p className="text-text-secondary text-base md:text-lg max-w-xl mx-auto">
-              Book directly for the best rates and exclusive luxury perks.
-            </p>
-          </div>
+          {/* Subtle inner gradient */}
+          <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
 
-          {/* Booking Form */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6">
-            {/* Check In */}
-            <motion.div
-              whileFocus="focus"
-              variants={inputVariants}
-              className="relative bg-white rounded-input px-5 py-4 shadow-soft border border-[#E8ECE7] transition-all duration-300"
-            >
-              <label className="flex items-center gap-2 text-text-secondary text-xs font-semibold uppercase tracking-wider mb-2">
-                <Calendar size={14} className="text-primary" />
-                Check‑in
-              </label>
-              <input
-                type="date"
-                value={checkIn}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setCheckIn(val);
-                  if (checkOut && new Date(checkOut) <= new Date(val)) {
-                    const nextDay = new Date(val);
-                    nextDay.setDate(nextDay.getDate() + 1);
-                    setCheckOut(nextDay.toISOString().split('T')[0]);
-                  }
-                }}
-                min={new Date().toISOString().split('T')[0]}
-                className="w-full text-text-primary font-medium bg-transparent outline-none cursor-pointer"
-                style={{ colorScheme: 'light' }}
-                disabled={loading}
-              />
-            </motion.div>
-
-            {/* Check Out */}
-            <motion.div
-              whileFocus="focus"
-              variants={inputVariants}
-              className="relative bg-white rounded-input px-5 py-4 shadow-soft border border-[#E8ECE7] transition-all duration-300"
-            >
-              <label className="flex items-center gap-2 text-text-secondary text-xs font-semibold uppercase tracking-wider mb-2">
-                <Calendar size={14} className="text-primary" />
-                Check‑out
-              </label>
-              <input
-                type="date"
-                value={checkOut}
-                onChange={(e) => setCheckOut(e.target.value)}
-                min={
-                  checkIn
-                    ? (() => {
-                      const d = new Date(checkIn);
-                      d.setDate(d.getDate() + 1);
-                      return d.toISOString().split('T')[0];
-                    })()
-                    : new Date().toISOString().split('T')[0]
-                }
-                className="w-full text-text-primary font-medium bg-transparent outline-none cursor-pointer"
-                style={{ colorScheme: 'light' }}
-                disabled={loading}
-              />
-            </motion.div>
-
-            {/* UPDATED: Guests Dropdown Container */}
-            <motion.div
-              whileFocus="focus"
-              variants={inputVariants}
-              className="relative bg-white rounded-input px-5 py-4 shadow-soft border border-[#E8ECE7] transition-all duration-300 flex flex-col justify-between"
-            >
-              <label className="flex items-center gap-2 text-text-secondary text-xs font-semibold uppercase tracking-wider mb-2">
-                <Users size={14} className="text-primary" />
-                Guests
-              </label>
-              <div className="relative flex items-center w-full">
-                <select
-                  value={guests}
-                  onChange={(e) => setGuests(parseInt(e.target.value))}
-                  className="w-full text-center pr-8 pl-2 font-serif text-text-primary font-medium bg-transparent outline-none cursor-pointer appearance-none tracking-wide focus:outline-none"
-                  disabled={loading}
-                >
-                  {[1, 2, 3, 4, 5, 6].map((num) => (
-                    <option key={num} value={num} className="bg-white text-text-primary text-center">
-                      {num} {num === 1 ? 'Guest' : 'Guests'}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown
-                  size={16}
-                  className="absolute right-1 text-text-secondary pointer-events-none"
-                />
+          <div className="relative p-6 md:p-8">
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-1 h-8 bg-[#F2B705] rounded-full" />
+              <div>
+                <h2 className="font-['Playfair_Display'] text-text-primary dark:text-white text-xl md:text-2xl font-semibold">
+                  Check Availability
+                </h2>
+                <p className="font-['Inter'] text-text-secondary dark:text-white/50 text-xs tracking-wide">
+                  Best rate guaranteed · No booking fees
+                </p>
               </div>
-            </motion.div>
+            </div>
 
-            {/* UPDATED: Room Type Dropdown Container */}
-            <motion.div
-              whileFocus="focus"
-              variants={inputVariants}
-              className="relative bg-white rounded-input px-5 py-4 shadow-soft border border-[#E8ECE7] transition-all duration-300 flex flex-col justify-between"
-            >
-              <label className="flex items-center gap-2 text-text-secondary text-xs font-semibold uppercase tracking-wider mb-2">
-                <BedDouble size={14} className="text-primary" />
-                Room
-              </label>
-              <div className="relative flex items-center w-full">
-                <select
-                  value={roomType}
-                  onChange={(e) => setRoomType(e.target.value)}
-                  className="w-full text-center pr-8 pl-2 font-serif text-text-primary font-medium bg-transparent outline-none cursor-pointer appearance-none tracking-wide focus:outline-none"
-                  disabled={loading}
-                >
-                  {getRoomTypeOptions().map((option) => (
-                    <option key={option.value} value={option.value} className="bg-white text-text-primary text-center">
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown
-                  size={16}
-                  className="absolute right-1 text-text-secondary pointer-events-none"
-                />
+            {/* Form grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+              {/* Check-in */}
+              <div className="group">
+                <label className="flex items-center gap-1.5 font-['Inter'] text-text-secondary dark:text-white/50 text-[11px] tracking-[0.12em] uppercase mb-2">
+                  <Calendar size={11} className="text-[#F2B705]" /> Check-in
+                </label>
+                <div className="relative bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 border border-black/10 dark:border-white/10 hover:border-[#F2B705]/40 rounded-2xl px-4 py-3 transition-all duration-300 cursor-pointer">
+                  <input
+                    type="date"
+                    value={checkIn}
+                    onChange={(e) => {
+                      setCheckIn(e.target.value);
+                      if (checkOut && new Date(checkOut) <= new Date(e.target.value)) {
+                        const next = new Date(e.target.value);
+                        next.setDate(next.getDate() + 1);
+                        setCheckOut(next.toISOString().split('T')[0]);
+                      }
+                    }}
+                    min={new Date().toISOString().split('T')[0]}
+                    disabled={loading}
+                    className="w-full bg-transparent text-text-primary dark:text-white font-['Inter'] font-medium text-sm outline-none cursor-pointer"
+                    style={{ colorScheme: theme }}
+                  />
+                </div>
               </div>
-            </motion.div>
-          </div>
 
-          {/* Book Now Button */}
-          <motion.div
-            className="mt-8 text-center"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-          >
-            <motion.button
-              onClick={handleBookNow}
-              disabled={loading}
-              whileHover={{ scale: loading ? 1 : 1.04, boxShadow: loading ? 'none' : '0 12px 35px rgba(212,175,55,0.4)' }}
-              whileTap={{ scale: loading ? 1 : 0.98 }}
-              className="bg-gold text-white px-10 py-3 rounded-full font-bold text-lg tracking-wide shadow-lg shadow-gold/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
-            >
-              {loading ? '⏳ Searching...' : 'Book Now'}
-            </motion.button>
-          </motion.div>
+              {/* Check-out */}
+              <div className="group">
+                <label className="flex items-center gap-1.5 font-['Inter'] text-text-secondary dark:text-white/50 text-[11px] tracking-[0.12em] uppercase mb-2">
+                  <Calendar size={11} className="text-[#F2B705]" /> Check-out
+                </label>
+                <div className="relative bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 border border-black/10 dark:border-white/10 hover:border-[#F2B705]/40 rounded-2xl px-4 py-3 transition-all duration-300 cursor-pointer">
+                  <input
+                    type="date"
+                    value={checkOut}
+                    onChange={(e) => setCheckOut(e.target.value)}
+                    min={
+                      checkIn
+                        ? (() => { const d = new Date(checkIn); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0]; })()
+                        : new Date().toISOString().split('T')[0]
+                    }
+                    disabled={loading}
+                    className="w-full bg-transparent text-text-primary dark:text-white font-['Inter'] font-medium text-sm outline-none cursor-pointer"
+                    style={{ colorScheme: theme }}
+                  />
+                </div>
+              </div>
+
+              {/* Guests */}
+              <div className="group">
+                <label className="flex items-center gap-1.5 font-['Inter'] text-text-secondary dark:text-white/50 text-[11px] tracking-[0.12em] uppercase mb-2">
+                  <Users size={11} className="text-[#F2B705]" /> Guests
+                </label>
+                <div className="relative bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 border border-black/10 dark:border-white/10 hover:border-[#F2B705]/40 rounded-2xl px-4 py-3 transition-all duration-300">
+                  <select
+                    value={guests}
+                    onChange={(e) => setGuests(parseInt(e.target.value))}
+                    disabled={loading}
+                    className="w-full bg-transparent text-text-primary dark:text-white font-['Inter'] font-medium text-sm outline-none cursor-pointer appearance-none"
+                    style={{ colorScheme: theme }}
+                  >
+                    {[1,2,3,4,5,6].map((n) => (
+                      <option key={n} value={n} className="bg-white text-text-primary dark:bg-[#111] dark:text-white">
+                        {n} {n === 1 ? 'Guest' : 'Guests'}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-text-secondary dark:text-white/40 pointer-events-none" />
+                </div>
+              </div>
+
+              {/* Room Type */}
+              <div className="group">
+                <label className="flex items-center gap-1.5 font-['Inter'] text-text-secondary dark:text-white/50 text-[11px] tracking-[0.12em] uppercase mb-2">
+                  <BedDouble size={11} className="text-[#F2B705]" /> Room Type
+                </label>
+                <div className="relative bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 border border-black/10 dark:border-white/10 hover:border-[#F2B705]/40 rounded-2xl px-4 py-3 transition-all duration-300">
+                  <select
+                    value={roomType}
+                    onChange={(e) => setRoomType(e.target.value)}
+                    disabled={loading}
+                    className="w-full bg-transparent text-text-primary dark:text-white font-['Inter'] font-medium text-sm outline-none cursor-pointer appearance-none"
+                    style={{ colorScheme: theme }}
+                  >
+                    {roomTypeOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value} className="bg-white text-text-primary dark:bg-[#111] dark:text-white">
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-text-secondary dark:text-white/40 pointer-events-none" />
+                </div>
+              </div>
+            </div>
+
+            {/* Search button */}
+            <div className="mt-6 flex justify-end">
+              <motion.button
+                onClick={handleSearch}
+                disabled={loading}
+                whileHover={!loading ? { scale: 1.04, boxShadow: '0 12px 40px rgba(242,183,5,0.5)' } : {}}
+                whileTap={!loading ? { scale: 0.97 } : {}}
+                className="relative overflow-hidden flex items-center gap-3 bg-[#F2B705] text-[#0F5B4F] font-['Inter'] font-bold text-sm tracking-[0.1em] uppercase px-10 py-4 rounded-full shadow-glow-gold disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all"
+              >
+                {/* shimmer */}
+                {!loading && (
+                  <span
+                    className="absolute inset-0"
+                    style={{
+                      background: 'linear-gradient(90deg,transparent 0%,rgba(255,255,255,0.25) 50%,transparent 100%)',
+                      backgroundSize: '200% 100%',
+                      animation: 'shimmer 2.5s linear infinite',
+                    }}
+                  />
+                )}
+                <span className="relative z-10 flex items-center gap-2">
+                  {loading ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-[#0F5B4F]/40 border-t-[#0F5B4F] rounded-full animate-spin" />
+                      Searching…
+                    </>
+                  ) : (
+                    <>
+                      <Search size={16} />
+                      Search Availability
+                    </>
+                  )}
+                </span>
+              </motion.button>
+            </div>
+          </div>
         </motion.div>
       </div>
     </section>

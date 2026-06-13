@@ -9,13 +9,17 @@ import {
   FiArrowRight,
   FiArrowLeft,
 } from 'react-icons/fi';
-import { FaGoogle, FaApple } from 'react-icons/fa';
-import { motion } from 'framer-motion';
+import { FaGoogle } from 'react-icons/fa';
+import { Sun, Moon } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { showToast } from '../services/toast';
 import apiClient from '../services/api';
 import { useAuthStore } from '../store/authStore';
+import { useThemeStore } from '../store/themeStore';
+import ThemeToggle from '../components/common/ThemeToggle';
 
 const LoginPage = () => {
+  const { theme, toggleTheme } = useThemeStore();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -98,21 +102,21 @@ const LoginPage = () => {
       return;
     }
     setLoading(true);
-    const toastId = toast.loading('Logging in...', {
-      style: { background: '#6b7280', color: '#fff' },
+    const toastId = toast.loading('Authenticating...', {
+      style: { background: '#111', color: '#fff', border: '1px solid rgba(242,183,5,0.3)' },
     });
     try {
       const response = await apiClient.post('/auth/login', formData);
       toast.dismiss(toastId);
       setAuth(response.data.token, response.data.user);
-      showToast.success('✅ Login successful! Redirecting...');
+      showToast.success('Login successful! Redirecting...');
       setTimeout(() => {
         navigate(roleRoutes[response.data.user.role] || '/dashboard/customer');
       }, 1000);
     } catch (error) {
       toast.dismiss(toastId);
       const errorMessage = error.response?.data?.message || 'Login failed';
-      showToast.error(`❌ ${errorMessage}`);
+      showToast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -128,10 +132,10 @@ const LoginPage = () => {
     try {
       await apiClient.post('/auth/forgot-password', { email: forgotEmail });
       setForgotSuccess(true);
-      showToast.success('✅ Password reset link sent to your email');
+      showToast.success('Password reset link sent to your email');
     } catch (error) {
       const errorMessage = error.response?.data?.message || 'Failed to send reset link';
-      showToast.error(`❌ ${errorMessage}`);
+      showToast.error(errorMessage);
     } finally {
       setForgotLoading(false);
     }
@@ -145,294 +149,243 @@ const LoginPage = () => {
   const isSocialLoading = (provider) => socialLoading[provider];
 
   return (
-    <div
-      className="h-screen overflow-hidden flex items-center justify-center p-4"
-      style={{
-        backgroundImage: "url('https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80')",
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-      }}
-    >
-      {/* Dark overlay */}
-      <div className="absolute inset-0 bg-black/50" />
+    <div className="min-h-screen relative flex items-center justify-center p-4 bg-gray-900 selection:bg-[#F2B705]/30 selection:text-white overflow-hidden transition-colors duration-500">
+      
+      {/* ── Background ──────────────────────────────────────────────────────── */}
+      <div 
+        className="absolute inset-0 z-0"
+        style={{
+          backgroundImage: "url('https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=1920&q=60')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        {/* Subtle Overlay instead of heavy blur */}
+        <div className="absolute inset-0 bg-black/30 dark:bg-black/50 transition-colors duration-700" />
+      </div>
 
+      <div className="absolute top-6 right-6 z-20">
+        <ThemeToggle />
+      </div>
+
+      <Link
+        to="/"
+        className="absolute top-6 left-6 z-20 flex items-center gap-2 group hover:opacity-80 transition-all"
+      >
+        <FiArrowLeft className="text-gray-600 dark:text-[#F2B705] group-hover:-translate-x-1 transition-transform" />
+        <span className="font-['Playfair_Display'] text-xl font-bold tracking-widest text-gray-900 dark:text-white uppercase">
+          LUX<span className="text-[#F2B705]">STAY</span>
+        </span>
+      </Link>
+
+      {/* ── Main Glass Card ─────────────────────────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, ease: 'easeOut' }}
-        className="relative w-full max-w-5xl bg-white rounded-[40px] shadow-2xl shadow-black/10 overflow-hidden flex flex-col lg:flex-row max-h-[calc(100vh-2rem)] h-full"
+        transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
+        className="relative z-10 w-full max-w-[480px] p-8 md:p-10 rounded-[32px] bg-white/10 dark:bg-white/5 backdrop-blur-md border border-white/20 shadow-xl"
       >
-        {/* ========== LEFT – Authentication Form ========== */}
-        <div className="w-full lg:w-1/2 p-6 sm:p-8 lg:p-14 flex flex-col h-full overflow-hidden bg-gray-100">
-          {/* Branding */}
-          <div className="mb-6 lg:mb-10 shrink-0">
-            <Link to="/" className="inline-block hover:opacity-85 transition-opacity">
-              <h1 className="text-2xl sm:text-3xl font-['Playfair_Display'] font-bold text-gray-900 tracking-tight">
-                LUXSTAY
-              </h1>
+        {/* Auth Toggle */}
+        {!showForgotPassword && (
+          <div className="flex bg-gray-100/50 dark:bg-black/40 rounded-full p-1 mb-10 border border-gray-200/50 dark:border-white/5 transition-colors duration-500">
+            <Link
+              to="/login"
+              className="flex-1 text-center py-2.5 rounded-full text-xs font-['Inter'] tracking-widest uppercase font-semibold transition-all duration-300 bg-[#F2B705] text-[#0A0A0A] shadow-sm"
+            >
+              Log In
             </Link>
-            <p className="text-sm text-gray-500 mt-1">Luxury Hotels & Resorts</p>
+            <Link
+              to="/register"
+              className="flex-1 text-center py-2.5 rounded-full text-xs font-['Inter'] tracking-widest uppercase font-semibold transition-all duration-300 text-gray-500 dark:text-white/50 hover:text-gray-900 dark:hover:text-white"
+            >
+              Sign Up
+            </Link>
           </div>
+        )}
 
-          {/* Auth Toggle Buttons */}
-          {!showForgotPassword && (
-            <div className="flex rounded-full bg-gray-200 p-1 mb-6 lg:mb-10 shrink-0">
-              <Link
-                to="/login"
-                className={`flex-1 text-center py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${location.pathname === '/login'
-                  ? 'bg-black text-white shadow-md'
-                  : 'text-gray-600 hover:text-black'
-                  }`}
-              >
-                Log In
-              </Link>
-              <Link
-                to="/register"
-                className={`flex-1 text-center py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${location.pathname === '/register'
-                  ? 'bg-black text-white shadow-md'
-                  : 'text-gray-600 hover:text-black'
-                  }`}
-              >
-                Sign Up
-              </Link>
-            </div>
-          )}
-
-          {/* Scrollable form area */}
-          <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin">
-
-            {/* ─── Forgot Password Form ─── */}
+        <div className="relative overflow-hidden">
+          <AnimatePresence mode="wait">
+            
+            {/* ── FORGOT PASSWORD VIEW ── */}
             {showForgotPassword ? (
               <motion.div
+                key="forgot"
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3 }}
               >
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowForgotPassword(false);
-                    setForgotSuccess(false);
-                    setForgotEmail('');
-                  }}
-                  className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-black font-medium mb-6 transition-colors"
+                  onClick={() => { setShowForgotPassword(false); setForgotSuccess(false); }}
+                  className="flex items-center gap-2 text-xs font-['Inter'] tracking-widest uppercase text-[#F2B705] hover:text-gray-900 dark:hover:text-white mb-8 transition-colors"
                 >
-                  <FiArrowLeft size={16} />
-                  Back to login
+                  <FiArrowLeft size={14} /> Back to Login
                 </button>
 
-                <h2 className="text-2xl sm:text-3xl font-['Playfair_Display'] font-bold text-gray-900 mb-2">
+                <h2 className="text-3xl font-['Playfair_Display'] font-bold text-gray-900 dark:text-white mb-3">
                   Reset Password
                 </h2>
-                <p className="text-gray-500 mb-6">
-                  Enter your email address and we'll send you a link to reset your password.
+                <p className="font-['Inter'] text-gray-600 dark:text-white/50 text-sm mb-8 leading-relaxed">
+                  Enter your email address to receive a secure link to reset your credentials.
                 </p>
 
                 {forgotSuccess ? (
-                  <div className="p-4 bg-green-50 border border-green-200 rounded-xl text-center">
-                    <div className="text-3xl mb-2">✉️</div>
-                    <h3 className="text-lg font-semibold text-green-800 mb-1">Check your email</h3>
-                    <p className="text-sm text-green-700">
-                      If an account with that email exists, we've sent a password reset link. Please check your inbox and spam folder.
+                  <div className="p-6 bg-yellow-50 dark:bg-[#F2B705]/10 border border-yellow-200 dark:border-[#F2B705]/20 rounded-2xl text-center">
+                    <div className="text-[#F2B705] mb-4 flex justify-center"><FiMail size={32} /></div>
+                    <h3 className="text-lg font-['Playfair_Display'] text-gray-900 dark:text-white mb-2">Check your inbox</h3>
+                    <p className="text-xs font-['Inter'] text-gray-600 dark:text-white/60 leading-relaxed mb-6">
+                      We've sent a secure recovery link. Please check your spam folder if it doesn't appear shortly.
                     </p>
                     <button
-                      type="button"
-                      onClick={() => {
-                        setShowForgotPassword(false);
-                        setForgotSuccess(false);
-                        setForgotEmail('');
-                      }}
-                      className="mt-4 text-sm text-green-700 hover:text-green-900 font-medium underline"
+                      onClick={() => { setShowForgotPassword(false); setForgotSuccess(false); setForgotEmail(''); }}
+                      className="text-xs font-['Inter'] tracking-widest uppercase text-[#F2B705] hover:text-gray-900 dark:hover:text-white transition-colors"
                     >
                       Return to login
                     </button>
                   </div>
                 ) : (
-                  <form onSubmit={handleForgotPassword} className="space-y-5">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        <FiMail className="inline mr-2 text-gray-400" size={16} />
-                        Email Address
-                      </label>
+                  <form onSubmit={handleForgotPassword} className="space-y-6">
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-20">
+                        <FiMail className="text-gray-400 dark:text-white/40 group-focus-within:text-[#F2B705] transition-colors duration-300" size={18} />
+                      </div>
                       <input
-                        id="forgot-email-input"
                         type="email"
+                        id="forgot-email"
                         value={forgotEmail}
                         onChange={(e) => setForgotEmail(e.target.value)}
-                        placeholder="your.email@example.com"
-                        className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3B42]/30 focus:border-transparent transition-all duration-200 text-sm"
+                        placeholder=" "
                         required
+                        className="peer block w-full h-[56px] pl-11 pr-4 pt-5 pb-1 rounded-2xl bg-white dark:bg-white/10 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:outline-none focus:ring-4 focus:ring-[#F2B705]/10 focus:border-[#F2B705] transition-all text-sm font-medium shadow-sm"
                       />
+                      <label
+                        htmlFor="forgot-email"
+                        className="absolute text-sm font-['Inter'] text-gray-500 dark:text-white/50 duration-300 transform -translate-y-1.5 scale-[0.8] top-4 z-10 origin-[0] left-11 peer-focus:text-[#F2B705] peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0.5 peer-focus:scale-[0.8] peer-focus:-translate-y-1.5 cursor-text pointer-events-none"
+                      >
+                        Email Address
+                      </label>
                     </div>
-
-                    <motion.button
-                      id="forgot-submit-btn"
+                    <button
                       type="submit"
                       disabled={forgotLoading}
-                      whileHover={{ scale: 1.01 }}
-                      whileTap={{ scale: 0.99 }}
-                      className="w-full flex items-center justify-center gap-2 bg-black text-white py-3.5 rounded-xl font-semibold text-sm shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-70"
+                      className="w-full relative overflow-hidden bg-[#F2B705] text-[#0A0A0A] font-['Inter'] font-bold text-xs tracking-widest uppercase py-4 rounded-full shadow-glow-gold transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
                     >
-                      {forgotLoading ? (
-                        <>
-                          <span className="inline-block animate-spin">⏳</span>
-                          Sending...
-                        </>
-                      ) : (
-                        <>
-                          Send Reset Link
-                          <FiArrowRight size={18} />
-                        </>
-                      )}
-                    </motion.button>
+                      {forgotLoading ? 'Sending...' : 'Send Reset Link'}
+                    </button>
                   </form>
                 )}
               </motion.div>
             ) : (
-              /* ─── Login Form ─── */
-              <>
-                <h2 className="text-2xl sm:text-3xl font-['Playfair_Display'] font-bold text-gray-900 mb-2">
+              
+              /* ── LOGIN VIEW ── */
+              <motion.div
+                key="login"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.3 }}
+              >
+                <h2 className="text-3xl font-['Playfair_Display'] font-bold text-gray-900 dark:text-white mb-2">
                   Welcome Back
                 </h2>
-                <p className="text-gray-500 mb-6">Sign in to your luxury concierge account.</p>
+                <p className="font-['Inter'] text-gray-600 dark:text-white/50 text-sm mb-8">
+                  Sign in to access your luxury concierge.
+                </p>
 
-                {/* Social Login Buttons */}
-                <div className="flex flex-wrap gap-3 mb-6">
-                  <button
-                    type="button"
-                    onClick={() => handleSocialLogin('google')}
-                    disabled={isSocialLoading('google')}
-                    className="flex-1 min-w-[80px] flex items-center justify-center gap-2 border border-gray-300 rounded-xl py-3 px-4 text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors disabled:opacity-60 bg-white"
-                  >
-                    {isSocialLoading('google') ? (
-                      <span className="inline-block animate-spin">⏳</span>
-                    ) : (
-                      <FaGoogle className="text-red-500" />
-                    )}
-                    <span className="hidden sm:inline font-['Poppins'] text-gray-600">Google</span>
-                  </button>
-                </div>
+                {/* Social Login */}
+                <button
+                  type="button"
+                  onClick={() => handleSocialLogin('google')}
+                  disabled={isSocialLoading('google')}
+                  className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl bg-white/50 dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:bg-white dark:hover:bg-white/10 hover:border-gray-300 dark:hover:border-white/20 transition-all text-gray-900 dark:text-white font-['Inter'] text-sm font-medium disabled:opacity-50"
+                >
+                  {isSocialLoading('google') ? 'Loading...' : <><FaGoogle className="text-gray-900 dark:text-white" size={16} /> Continue with Google</>}
+                </button>
 
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="flex-1 h-px bg-gray-300" />
-                  <span className="text-xs text-gray-400">or</span>
-                  <div className="flex-1 h-px bg-gray-300" />
+                <div className="flex items-center gap-4 my-8">
+                  <div className="flex-1 h-px bg-gray-200 dark:bg-white/10" />
+                  <span className="font-['Inter'] text-[10px] tracking-widest uppercase text-gray-400 dark:text-white/30">Or</span>
+                  <div className="flex-1 h-px bg-gray-200 dark:bg-white/10" />
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <FiMail className="inline mr-2 text-gray-400" size={16} />
-                      Email Address
-                    </label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-20">
+                      <FiMail className="text-gray-400 dark:text-white/40 group-focus-within:text-[#F2B705] transition-colors duration-300" size={18} />
+                    </div>
                     <input
                       type="email"
                       name="email"
+                      id="login-email"
                       value={formData.email}
                       onChange={handleChange}
-                      placeholder="admin@hotel.com"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3B42]/30 focus:border-transparent transition-all duration-200 text-sm"
+                      placeholder=" "
                       required
+                      className="peer block w-full h-[56px] pl-11 pr-4 pt-5 pb-1 rounded-2xl bg-white dark:bg-white/10 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:outline-none focus:ring-4 focus:ring-[#F2B705]/10 focus:border-[#F2B705] transition-all text-sm font-medium shadow-sm"
                     />
+                    <label
+                      htmlFor="login-email"
+                      className="absolute text-sm font-['Inter'] text-gray-500 dark:text-white/50 duration-300 transform -translate-y-1.5 scale-[0.8] top-4 z-10 origin-[0] left-11 peer-focus:text-[#F2B705] peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0.5 peer-focus:scale-[0.8] peer-focus:-translate-y-1.5 cursor-text pointer-events-none"
+                    >
+                      Email Address
+                    </label>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <FiLock className="inline mr-2 text-gray-400" size={16} />
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-20">
+                      <FiLock className="text-gray-400 dark:text-white/40 group-focus-within:text-[#F2B705] transition-colors duration-300" size={18} />
+                    </div>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      name="password"
+                      id="login-password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      placeholder=" "
+                      required
+                      className="peer block w-full h-[56px] pl-11 pr-12 pt-5 pb-1 rounded-2xl bg-white dark:bg-white/10 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:outline-none focus:ring-4 focus:ring-[#F2B705]/10 focus:border-[#F2B705] transition-all text-sm font-medium shadow-sm"
+                    />
+                    <label
+                      htmlFor="login-password"
+                      className="absolute text-sm font-['Inter'] text-gray-500 dark:text-white/50 duration-300 transform -translate-y-1.5 scale-[0.8] top-4 z-10 origin-[0] left-11 peer-focus:text-[#F2B705] peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0.5 peer-focus:scale-[0.8] peer-focus:-translate-y-1.5 cursor-text pointer-events-none"
+                    >
                       Password
                     </label>
-                    <div className="relative">
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        name="password"
-                        value={formData.password}
-                        onChange={handleChange}
-                        placeholder="••••••••"
-                        className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3B42]/30 focus:border-transparent transition-all duration-200 text-sm pr-12"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600"
-                      >
-                        {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/40 hover:text-[#F2B705] dark:hover:text-[#F2B705] transition-colors z-20"
+                    >
+                      {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                    </button>
                   </div>
 
-                  <div className="flex items-center justify-between text-sm">
-                    <label className="flex items-center gap-2 text-gray-600">
-                      <input type="checkbox" className="rounded border-gray-300 text-black focus:ring-black" />
-                      Remember me
+                  <div className="flex items-center justify-between mt-2 mb-8">
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                      <input type="checkbox" className="rounded border-gray-300 dark:border-white/20 bg-white/50 dark:bg-white/5 text-[#F2B705] focus:ring-[#F2B705] focus:ring-offset-0" />
+                      <span className="font-['Inter'] text-xs text-gray-500 dark:text-white/50 group-hover:text-gray-900 dark:group-hover:text-white/80 transition-colors">Remember me</span>
                     </label>
                     <button
-                      id="forgot-password-link"
                       type="button"
-                      onClick={() => {
-                        setShowForgotPassword(true);
-                        setForgotEmail(formData.email || '');
-                      }}
-                      className="text-gray-600 hover:text-black font-medium transition-colors"
+                      onClick={() => { setShowForgotPassword(true); setForgotEmail(formData.email); }}
+                      className="font-['Inter'] text-xs text-[#F2B705] hover:text-yellow-600 dark:hover:text-white transition-colors"
                     >
                       Forgot password?
                     </button>
                   </div>
 
-                  <motion.button
+                  <button
                     type="submit"
                     disabled={loading}
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.99 }}
-                    className="w-full flex items-center justify-center gap-2 bg-black text-white py-3.5 rounded-xl font-semibold text-sm shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-70"
+                    className="w-full relative overflow-hidden flex items-center justify-center gap-3 bg-[#F2B705] text-[#0A0A0A] font-['Inter'] font-bold text-xs tracking-widest uppercase py-4 rounded-full shadow-glow-gold transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
                   >
-                    {loading ? (
-                      <>
-                        <span className="inline-block animate-spin">⏳</span>
-                        Signing in...
-                      </>
-                    ) : (
-                      <>
-                        Sign In
-                        <FiArrowRight size={18} />
-                      </>
-                    )}
-                  </motion.button>
+                    {loading ? 'Authenticating...' : <>Sign In <FiArrowRight size={16} /></>}
+                  </button>
                 </form>
-              </>
+              </motion.div>
             )}
-          </div>
-        </div>
-
-        {/* ========== RIGHT – Immersive Image Panel ========== */}
-        <div className="relative w-full lg:w-1/2 h-48 sm:h-64 lg:h-full bg-gradient-to-br from-[#0F5B4F] to-[#0A3D34] overflow-hidden order-first lg:order-last">
-          <img
-            src="https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80"
-            alt="Luxury Resort"
-            className="absolute inset-0 w-full h-full object-cover opacity-70"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/30 to-transparent" />
-
-          <div className="absolute bottom-4 sm:bottom-8 left-4 sm:left-8 right-4 sm:right-8 text-white">
-            <h3 className="text-lg sm:text-2xl md:text-3xl font-['Playfair_Display'] font-bold leading-tight">
-              Escape the Ordinary,<br />Embrace the Journey!
-            </h3>
-            <Link
-              to="/gallery"
-              className="mt-2 sm:mt-4 inline-block px-4 sm:px-6 py-1.5 sm:py-2 bg-white/20 backdrop-blur-sm border border-white/30 rounded-full text-xs sm:text-sm font-medium text-white hover:bg-white/30 transition-all"
-            >
-              Discover More
-            </Link>
-          </div>
-
-          <Link
-            to="/"
-            state={{ from: null }}
-            className="absolute top-4 sm:top-6 right-4 sm:right-6 z-20 inline-flex items-center gap-1.5 text-white/90 hover:text-white text-xs sm:text-sm font-medium transition-all backdrop-blur-md bg-black/35 px-4 py-2 rounded-full border border-white/20 shadow-lg"
-          >
-            <FiArrowRight className="rotate-180" size={14} />
-            Back to Home
-          </Link>
+          </AnimatePresence>
         </div>
       </motion.div>
     </div>

@@ -4,44 +4,45 @@ import { useAuthStore } from './store/authStore';
 import { setupSocketConnection, disconnectSocket } from './services/socket';
 import ToastProvider from './components/ToastProvider';
 
-// ── Public pages ──────────────────────────────────────────────────────────────
+// ── Public pages (Eagerly loaded for fast LCP) ────────────────────────────────
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import HomePage from './pages/HomePage';
 import NotFoundPage from './pages/NotFoundPage';
-import PaymentCallback from './pages/PaymentCallback';
-import LuxuryGalleryPage from './components/landing/GalleryPage';
 
-// ── Dashboards ────────────────────────────────────────────────────────────────
-import SuperAdminDashboard from './pages/dashboards/SuperAdminDashboard';
-import AdminDashboard from './pages/dashboards/AdminDashboard';
-import ManagerDashboard from './pages/dashboards/ManagerDashboard';
-import AccountantDashboard from './pages/dashboards/AccountantDashboard';
-import StaffDashboard from './pages/dashboards/StaffDashboard';
-import CustomerDashboard from './pages/dashboards/CustomerDashboard';
-import HRDashboard from './pages/dashboards/HRDashboard';
-import ProfilePage from './pages/ProfilePage';
+// ── Lazy-loaded pages (Code-splitting to reduce bundle size) ──────────────────
+const PaymentCallback = React.lazy(() => import('./pages/PaymentCallback'));
+const LuxuryGalleryPage = React.lazy(() => import('./components/landing/GalleryPage'));
 
-// ── Management pages ──────────────────────────────────────────────────────────
-import RoomsPage from './pages/RoomsPage';
-import HallsPage from './pages/HallsPage';
-import RoomTypesPage from './pages/RoomTypesPage';
-import HallTypesPage from './pages/HallTypesPage';
-import ReservationsPage from './pages/ReservationsPage';
-import PaymentsPage from './pages/PaymentsPage';
-import PayrollPage from './pages/PayrollPage';
-import MaintenancePage from './pages/MaintenancePage';
-import UsersPage from './pages/UsersPage';
-import ReportsPage from './pages/ReportsPage';
-import AuditLogsPage from './pages/AuditLogsPage';
-import ComplaintsPage from './pages/ComplaintsPage';
-import InvoicePage from './pages/InvoicePage';
+// Dashboards
+const SuperAdminDashboard = React.lazy(() => import('./pages/dashboards/SuperAdminDashboard'));
+const AdminDashboard = React.lazy(() => import('./pages/dashboards/AdminDashboard'));
+const ManagerDashboard = React.lazy(() => import('./pages/dashboards/ManagerDashboard'));
+const AccountantDashboard = React.lazy(() => import('./pages/dashboards/AccountantDashboard'));
+const StaffDashboard = React.lazy(() => import('./pages/dashboards/StaffDashboard'));
+const CustomerDashboard = React.lazy(() => import('./pages/dashboards/CustomerDashboard'));
+const HRDashboard = React.lazy(() => import('./pages/dashboards/HRDashboard'));
+const ProfilePage = React.lazy(() => import('./pages/ProfilePage'));
 
+// Management pages
+const RoomsPage = React.lazy(() => import('./pages/RoomsPage'));
+const HallsPage = React.lazy(() => import('./pages/HallsPage'));
+const RoomTypesPage = React.lazy(() => import('./pages/RoomTypesPage'));
+const HallTypesPage = React.lazy(() => import('./pages/HallTypesPage'));
+const ReservationsPage = React.lazy(() => import('./pages/ReservationsPage'));
+const PaymentsPage = React.lazy(() => import('./pages/PaymentsPage'));
+const PayrollPage = React.lazy(() => import('./pages/PayrollPage'));
+const MaintenancePage = React.lazy(() => import('./pages/MaintenancePage'));
+const UsersPage = React.lazy(() => import('./pages/UsersPage'));
+const ReportsPage = React.lazy(() => import('./pages/ReportsPage'));
+const AuditLogsPage = React.lazy(() => import('./pages/AuditLogsPage'));
+const ComplaintsPage = React.lazy(() => import('./pages/ComplaintsPage'));
+const InvoicePage = React.lazy(() => import('./pages/InvoicePage'));
 
-// ── Phase 5 + 7 pages (no DashboardLayout wrapper) ───────────────────────────
-import ChatPage from './pages/ChatPage';
-import HousekeepingPage from './pages/HousekeepingPage';
+// Phase 5 + 7 pages
+const ChatPage = React.lazy(() => import('./pages/ChatPage'));
+const HousekeepingPage = React.lazy(() => import('./pages/HousekeepingPage'));
 
 // ── Layout & guards ───────────────────────────────────────────────────────────
 import ProtectedRoute, { RoleRoute } from './components/ProtectedRoute';
@@ -97,9 +98,15 @@ function App() {
   return (
     <Router>
       <ToastProvider />
-      <ChatWidget />
+      {token && <ChatWidget />}
 
-      <Routes>
+      <React.Suspense fallback={
+        <div className="min-h-screen flex flex-col items-center justify-center bg-background dark:bg-dark-bg transition-colors duration-300">
+          <div className="w-12 h-12 border-4 border-[#F2B705]/20 border-t-[#F2B705] rounded-full animate-spin mb-4" />
+          <p className="text-text-secondary/60 dark:text-white/50 font-['Inter'] text-xs tracking-widest uppercase animate-pulse">Loading...</p>
+        </div>
+      }>
+        <Routes>
 
         {/* ── Public ─────────────────────────────────────────────────────── */}
         <Route path="/" element={<HomePage />} />
@@ -248,7 +255,8 @@ function App() {
         {/* ── 404 ────────────────────────────────────────────────────────── */}
         <Route path="*" element={<NotFoundPage />} />
 
-      </Routes>
+        </Routes>
+      </React.Suspense>
     </Router>
   );
 }

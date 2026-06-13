@@ -1,5 +1,11 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+/* ────────────────────────────────────────────────────────────────────────────
+   LuxStay — Global CSS
+   Imports: Inter (body) + Playfair Display (headings) + Plus Jakarta Sans (UI)
+   ──────────────────────────────────────────────────────────────────────────── */
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+/* Legacy class for sections that force Playfair everywhere */
 .font-playfair-all,
 .font-playfair-all * {
   font-family: 'Playfair Display', serif !important;
@@ -9,9 +15,47 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ────────────────────────────────────────────────────────────────────────────
+   CSS Custom Properties — Luxury Design Tokens
+   ──────────────────────────────────────────────────────────────────────────── */
+:root {
+  /* Colors */
+  --color-lux-gold: #F2B705;
+  --color-lux-gold-dark: #C9960A;
+  --color-lux-green: #0F5B4F;
+  --color-dark-bg: #0A0A0A;
+  --color-dark-surface: #111111;
+  --color-dark-card: #181818;
+  --color-warm-white: #FAFAF8;
+  --color-warm-gray: #F5F5F2;
+
+  /* Glass effect variables */
+  --glass-bg: rgba(255, 255, 255, 0.06);
+  --glass-bg-warm: rgba(255, 255, 255, 0.12);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-border-gold: rgba(242, 183, 5, 0.25);
+  --glass-blur: 12px;
+
+  /* Typography scale */
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-ui: 'Plus Jakarta Sans', sans-serif;
+
+  /* Transition defaults */
+  --transition-luxury: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --transition-spring: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   Base Styles
+   ──────────────────────────────────────────────────────────────────────────── */
 @layer base {
   body {
     @apply font-sans bg-background text-text-primary antialiased;
+    font-feature-settings: 'kern' 1, 'liga' 1;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   h1,
@@ -22,11 +66,31 @@
   h6 {
     @apply font-heading tracking-tight;
   }
+
+  /* Smooth scrolling for anchor links */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Better focus outlines for accessibility */
+  :focus-visible {
+    outline: 2px solid var(--color-lux-gold);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  /* Remove default button focus in favour of :focus-visible */
+  button:focus:not(:focus-visible) {
+    outline: none;
+  }
 }
 
+/* ────────────────────────────────────────────────────────────────────────────
+   Component Utilities
+   ──────────────────────────────────────────────────────────────────────────── */
 @layer components {
 
-  /* Hide scrollbar for clean dashboard look */
+  /* ── Scrollbar hiding ───────────────────────────────────────────────────── */
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
@@ -35,4 +99,650 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  /* ── Glassmorphism utility classes ─────────────────────────────────────── */
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+  }
+
+  .glass-warm {
+    background: var(--glass-bg-warm);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid rgba(255, 255, 255, 0.18);
+  }
+
+  .glass-gold {
+    background: rgba(242, 183, 5, 0.08);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border-gold);
+  }
+
+  .glass-nav {
+    background: rgba(10, 10, 10, 0.5);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+    transition: background 0.3s ease, border 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .dark .glass-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  /* ── Shimmer effect (for buttons / loaders) ─────────────────────────────── */
+  .shimmer {
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.3) 50%,
+        transparent 100%);
+    background-size: 200% 100%;
+    animation: shimmer 2.5s linear infinite;
+  }
+
+  .shimmer-gold {
+    background: linear-gradient(90deg,
+        #F2B705 0%,
+        #FFD54F 40%,
+        #F2B705 60%,
+        #C9960A 100%);
+    background-size: 200% 100%;
+    animation: shimmer 2s linear infinite;
+  }
+
+  /* ── Gold gradient text ─────────────────────────────────────────────────── */
+  .text-gradient-gold {
+    background: linear-gradient(135deg, #F2B705 0%, #FFD54F 50%, #C9960A 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-gradient-green-gold {
+    background: linear-gradient(135deg, #0F5B4F 0%, #F2B705 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ── Gold border sweep animation ────────────────────────────────────────── */
+  .gold-border-sweep {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .gold-border-sweep::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 1px solid transparent;
+    border-radius: inherit;
+    background: linear-gradient(135deg, var(--color-lux-gold), transparent, var(--color-lux-gold)) border-box;
+    -webkit-mask:
+      linear-gradient(#fff 0 0) padding-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: destination-out;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+  }
+
+  .gold-border-sweep:hover::before {
+    opacity: 1;
+  }
+
+  /* ── Animated underline for nav links ──────────────────────────────────── */
+  .underline-gold {
+    position: relative;
+  }
+
+  .underline-gold::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: var(--color-lux-gold);
+    border-radius: 2px;
+    transition: width 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .underline-gold:hover::after,
+  .underline-gold.active::after {
+    width: 100%;
+  }
+
+  /* ── Section reveal animation (Intersection Observer target) ─────────────── */
+  .lux-reveal {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+      transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .lux-reveal.in-view {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .lux-reveal-left {
+    opacity: 0;
+    transform: translateX(-60px);
+    transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+  }
+
+  .lux-reveal-left.in-view {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .lux-reveal-right {
+    opacity: 0;
+    transform: translateX(60px);
+    transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+  }
+
+  .lux-reveal-right.in-view {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  /* ── 3D card tilt base styles ───────────────────────────────────────────── */
+  .tilt-card {
+    transform-style: preserve-3d;
+    transition: transform 0.1s ease-out, box-shadow 0.3s ease;
+    will-change: transform;
+  }
+
+  .tilt-card:hover {
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(242, 183, 5, 0.15);
+  }
+
+  /* ── Gold accent line ───────────────────────────────────────────────────── */
+  .gold-line {
+    display: block;
+    width: 60px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--color-lux-gold), var(--color-lux-gold-dark));
+    border-radius: 2px;
+    margin: 16px 0;
+  }
+
+  .gold-line-center {
+    display: block;
+    width: 60px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--color-lux-gold), var(--color-lux-gold-dark));
+    border-radius: 2px;
+    margin: 16px auto;
+  }
+
+  /* ── Gold corner frame accent (for Brand section image) ─────────────────── */
+  .gold-frame {
+    position: relative;
+  }
+
+  .gold-frame::before {
+    content: '';
+    position: absolute;
+    top: -12px;
+    left: -12px;
+    width: 60px;
+    height: 60px;
+    border-top: 3px solid var(--color-lux-gold);
+    border-left: 3px solid var(--color-lux-gold);
+    border-radius: 2px;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  .gold-frame::after {
+    content: '';
+    position: absolute;
+    bottom: -12px;
+    right: -12px;
+    width: 60px;
+    height: 60px;
+    border-bottom: 3px solid var(--color-lux-gold);
+    border-right: 3px solid var(--color-lux-gold);
+    border-radius: 2px;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  /* ── Luxury button base ─────────────────────────────────────────────────── */
+  .btn-lux-gold {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--color-lux-gold);
+    color: var(--color-lux-green);
+    font-family: var(--font-ui);
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 14px 36px;
+    border-radius: 9999px;
+    border: none;
+    cursor: pointer;
+    overflow: hidden;
+    transition: var(--transition-luxury);
+    box-shadow: 0 4px 20px rgba(242, 183, 5, 0.35);
+  }
+
+  .btn-lux-gold::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+  }
+
+  .btn-lux-gold:hover {
+    box-shadow: 0 8px 35px rgba(242, 183, 5, 0.55);
+    transform: translateY(-2px);
+  }
+
+  .btn-lux-gold:hover::after {
+    transform: translateX(100%);
+  }
+
+  .btn-lux-outline {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    color: var(--color-lux-gold);
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 0.9rem;
+    letter-spacing: 0.06em;
+    padding: 12px 32px;
+    border-radius: 9999px;
+    border: 1.5px solid var(--color-lux-gold);
+    cursor: pointer;
+    overflow: hidden;
+    transition: var(--transition-luxury);
+  }
+
+  .btn-lux-outline:hover {
+    background: rgba(242, 183, 5, 0.1);
+    box-shadow: 0 0 20px rgba(242, 183, 5, 0.2);
+    transform: translateY(-1px);
+  }
+
+  /* ── Animated gold border button (CTA) ─────────────────────────────────── */
+  .btn-gold-border-animated {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    color: var(--color-lux-gold);
+    font-family: var(--font-ui);
+    font-weight: 700;
+    font-size: 1rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 16px 48px;
+    border-radius: 9999px;
+    border: none;
+    cursor: pointer;
+    transition: var(--transition-luxury);
+  }
+
+  .btn-gold-border-animated::before,
+  .btn-gold-border-animated::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    border: 2px solid var(--color-lux-gold);
+  }
+
+  .btn-gold-border-animated::before {
+    animation: borderPulse 2s ease-in-out infinite;
+  }
+
+  .btn-gold-border-animated:hover {
+    background: rgba(242, 183, 5, 0.12);
+    box-shadow: 0 0 40px rgba(242, 183, 5, 0.3);
+    transform: scale(1.03);
+  }
+
+  /* ── Parallax container ─────────────────────────────────────────────────── */
+  .parallax-container {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .parallax-bg {
+    position: absolute;
+    inset: -20%;
+    background-size: cover;
+    background-position: center;
+    will-change: transform;
+  }
+
+  /* ── Masonry grid (gallery) ─────────────────────────────────────────────── */
+  .masonry-grid {
+    columns: 1;
+    column-gap: 20px;
+  }
+
+  @media (min-width: 640px) {
+    .masonry-grid {
+      columns: 2;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .masonry-grid {
+      columns: 3;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .masonry-grid {
+      columns: 4;
+    }
+  }
+
+  .masonry-item {
+    break-inside: avoid;
+    margin-bottom: 20px;
+    width: 100%;
+  }
+
+  /* ── Image blur-up loading ──────────────────────────────────────────────── */
+  .img-blur-up {
+    filter: blur(10px);
+    transition: filter 0.5s ease;
+  }
+
+  .img-blur-up.loaded {
+    filter: blur(0);
+  }
+
+  /* ── Particle dot ───────────────────────────────────────────────────────── */
+  .particle {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: particleFloat var(--duration, 4s) ease-in-out var(--delay, 0s) infinite;
+    opacity: 0.4;
+  }
+
+  /* ── Clip-path reveal (HallShowcase) ────────────────────────────────────── */
+  .clip-hidden {
+    clip-path: inset(0 100% 0 0);
+    opacity: 0;
+    transition: clip-path 0.9s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+      opacity 0.5s ease;
+  }
+
+  .clip-revealed {
+    clip-path: inset(0 0% 0 0);
+    opacity: 1;
+  }
+
+  /* ── Section alternating backgrounds ────────────────────────────────────── */
+  .section-dark {
+    background-color: var(--color-warm-white);
+    color: #1E1E1E;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  .dark .section-dark {
+    background-color: var(--color-dark-bg);
+    color: #FAFAF8;
+  }
+
+  .section-dark-2 {
+    background-color: var(--color-warm-gray);
+    color: #1E1E1E;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  .dark .section-dark-2 {
+    background-color: #0D0D0D;
+    color: #FAFAF8;
+  }
+
+  .section-warm {
+    background-color: var(--color-warm-white);
+    color: #1E1E1E;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  .dark .section-warm {
+    background-color: var(--color-dark-bg);
+    color: #FAFAF8;
+  }
+
+  .section-warm-gray {
+    background-color: var(--color-warm-gray);
+    color: #1E1E1E;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  .dark .section-warm-gray {
+    background-color: #0D0D0D;
+    color: #FAFAF8;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   Utility Extras
+   ──────────────────────────────────────────────────────────────────────────── */
+@layer utilities {
+
+  /* Performance hints */
+  .will-change-transform {
+    will-change: transform;
+  }
+
+  .will-change-opacity {
+    will-change: opacity;
+  }
+
+  /* Custom scroll indicator */
+  .scroll-indicator {
+    width: 2px;
+    height: 60px;
+    background: linear-gradient(to bottom, var(--color-lux-gold), transparent);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .scroll-indicator::after {
+    content: '';
+    position: absolute;
+    top: -100%;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.6);
+    animation: scrollSlide 1.8s ease-in-out infinite;
+  }
+
+  /* Stagger delay utilities */
+  .stagger-1 {
+    animation-delay: 0.1s;
+  }
+
+  .stagger-2 {
+    animation-delay: 0.2s;
+  }
+
+  .stagger-3 {
+    animation-delay: 0.3s;
+  }
+
+  .stagger-4 {
+    animation-delay: 0.4s;
+  }
+
+  .stagger-5 {
+    animation-delay: 0.5s;
+  }
+
+  .stagger-6 {
+    animation-delay: 0.6s;
+  }
+
+  /* Text shadow for hero legibility */
+  .text-shadow-dark {
+    text-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
+  }
+
+  .text-shadow-heavy {
+    text-shadow: 0 4px 30px rgba(0, 0, 0, 0.8);
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   Additional Keyframes (CSS-only, not in Tailwind config)
+   ──────────────────────────────────────────────────────────────────────────── */
+@keyframes borderPulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.06);
+    opacity: 0.5;
+  }
+}
+
+@keyframes scrollSlide {
+  0% {
+    top: -100%;
+  }
+
+  100% {
+    top: 200%;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes particleFloat {
+
+  0%,
+  100% {
+    transform: translateY(0px) translateX(0px);
+    opacity: 0.6;
+  }
+
+  25% {
+    transform: translateY(-20px) translateX(10px);
+    opacity: 1;
+  }
+
+  75% {
+    transform: translateY(-10px) translateX(-8px);
+    opacity: 0.4;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   Lightbox Modal
+   ──────────────────────────────────────────────────────────────────────────── */
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lightbox-img {
+  max-width: 90vw;
+  max-height: 85vh;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.8);
+  animation: scaleIn 0.3s ease-out forwards;
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   Date input styling (cross-browser)
+   ──────────────────────────────────────────────────────────────────────────── */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: invert(0.5) sepia(1) saturate(2) hue-rotate(5deg);
+  opacity: 0.7;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   Filter pill transition (Gallery page)
+   ──────────────────────────────────────────────────────────────────────────── */
+.filter-pill {
+  transition: all 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  position: relative;
+  overflow: hidden;
+}
+
+.filter-pill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(242, 183, 5, 0.1);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  border-radius: inherit;
+}
+
+.filter-pill:hover::after {
+  opacity: 1;
+}
+
+.filter-pill.active {
+  background: var(--color-lux-gold);
+  color: var(--color-lux-green);
+  border-color: var(--color-lux-gold);
+  box-shadow: 0 4px 20px rgba(242, 183, 5, 0.4);
 }
