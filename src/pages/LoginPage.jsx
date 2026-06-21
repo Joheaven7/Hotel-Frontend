@@ -78,7 +78,9 @@ const LoginPage = () => {
         localStorage.setItem('user', JSON.stringify(decodedUser));
         setAuth(urlToken, decodedUser);
         window.history.replaceState({}, document.title, window.location.pathname);
-        const targetRoute = roleRoutes[decodedUser.role] || '/dashboard/customer';
+        const targetRoute = sessionStorage.getItem('pendingReservation')
+          ? '/reservations'
+          : (roleRoutes[decodedUser.role] || '/dashboard/customer');
         navigate(targetRoute, { replace: true });
       } catch (e) {
         console.error("Failed to decode token payload data string payload", e);
@@ -90,7 +92,10 @@ const LoginPage = () => {
     if (token && user?.role) {
       const params = new URLSearchParams(window.location.search);
       if (!params.get('token')) {
-        navigate(roleRoutes[user.role] || '/dashboard/customer', { replace: true });
+        const targetRoute = sessionStorage.getItem('pendingReservation')
+          ? '/reservations'
+          : (roleRoutes[user.role] || '/dashboard/customer');
+        navigate(targetRoute, { replace: true });
       }
     }
   }, [token, user, navigate]);
@@ -111,7 +116,10 @@ const LoginPage = () => {
       setAuth(response.data.token, response.data.user);
       showToast.success('Login successful! Redirecting...');
       setTimeout(() => {
-        navigate(roleRoutes[response.data.user.role] || '/dashboard/customer');
+        const targetRoute = sessionStorage.getItem('pendingReservation')
+          ? '/reservations'
+          : (roleRoutes[response.data.user.role] || '/dashboard/customer');
+        navigate(targetRoute);
       }, 1000);
     } catch (error) {
       toast.dismiss(toastId);

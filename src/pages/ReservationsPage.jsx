@@ -110,9 +110,10 @@ const EMPTY_ROOM = {
   specialRequests: '',
   // walk-in
   isWalkIn: false,
-  guestName: '',
-  guestEmail: '',
-  guestPhone: '',
+  fullName: '',
+  email: '',
+  phone: '',
+  idNumber: '',
 };
 
 const EMPTY_HALL = {
@@ -122,6 +123,12 @@ const EMPTY_HALL = {
   endTime: '17:00',
   numberOfGuests: 1,
   specialRequests: '',
+  // walk-in
+  isWalkIn: false,
+  fullName: '',
+  email: '',
+  phone: '',
+  idNumber: '',
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -158,14 +165,59 @@ const ReservationsPage = () => {
     if (q) setUrlSearch(q);
   }, [location.search]);
 
+  // ── Handle pending booking details from home page ───────────────────────────
+  useEffect(() => {
+    let data = location.state;
+    const pendingJson = sessionStorage.getItem('pendingReservation');
+    if (!data && pendingJson) {
+      try {
+        data = JSON.parse(pendingJson);
+      } catch (e) {
+        console.error('Failed to parse pending reservation:', e);
+      }
+    }
+
+    if (data && data.category) {
+      if (data.category.toUpperCase() === 'ROOM') {
+        setResType('room');
+        setRoomForm({
+          ...EMPTY_ROOM,
+          roomTypeId: data.roomTypeId || '',
+          checkInDate: data.checkIn || '',
+          checkOutDate: data.checkOut || '',
+          numberOfGuests: data.guests || 1
+        });
+        setModalOpen(true);
+      } else if (data.category.toUpperCase() === 'HALL') {
+        setResType('hall');
+        setHallForm({
+          ...EMPTY_HALL,
+          hallTypeId: data.hallTypeId || '',
+          eventDate: data.eventDate || '',
+          startTime: data.startTime || '09:00',
+          endTime: data.endTime || '17:00',
+          numberOfGuests: data.guests || 1
+        });
+        setModalOpen(true);
+      }
+
+      // Clean up to prevent reopening on reload
+      sessionStorage.removeItem('pendingReservation');
+      try {
+        window.history.replaceState({}, document.title);
+      } catch (e) {
+        console.error('replaceState failed:', e);
+      }
+    }
+  }, [location.state]);
+
   // ── Fetch ───────────────────────────────────────────────────────────────────
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [resRes, rtRes, htRes] = await Promise.allSettled([
+      const [resRes, typesRes] = await Promise.allSettled([
         apiClient.get('/reservations'),
-        apiClient.get('/room-types'),
-        apiClient.get('/hall-types'),
+        apiClient.get('/types'),
       ]);
 
       if (resRes.status === 'fulfilled') {
@@ -174,11 +226,13 @@ const ReservationsPage = () => {
       } else {
         toast.error('Failed to load reservations');
       }
-      if (rtRes.status === 'fulfilled') {
-        setRoomTypes(rtRes.value.data?.roomTypes || []);
-      }
-      if (htRes.status === 'fulfilled') {
-        setHallTypes(htRes.value.data?.hallTypes || []);
+
+      if (typesRes.status === 'fulfilled') {
+        const allTypes = typesRes.value.data?.types || [];
+        setRoomTypes(allTypes.filter((t) => t.category === 'ROOM'));
+        setHallTypes(allTypes.filter((t) => t.category === 'HALL'));
+      } else {
+        toast.error('Failed to load room/hall types');
       }
     } finally {
       setLoading(false);
@@ -218,9 +272,10 @@ const ReservationsPage = () => {
       e.numberOfGuests = 'At least 1 guest required';
     // Walk-in validation
     if (roomForm.isWalkIn) {
-      if (!roomForm.guestName?.trim()) e.guestName = 'Guest legal name required';
-      if (!roomForm.guestPhone?.trim()) e.guestPhone = 'Guest phone required';
-      if (!roomForm.guestEmail?.trim()) e.guestEmail = 'Guest email required';
+      if (!roomForm.fullName?.trim()) e.fullName = 'Full Name is required';
+      if (!roomForm.phone?.trim()) e.phone = 'Phone number is required';
+      if (!roomForm.email?.trim()) e.email = 'Email is required';
+      if (!roomForm.idNumber?.trim()) e.idNumber = 'ID Number is required';
     }
     setFormErrors(e);
     return Object.keys(e).length === 0;
@@ -236,6 +291,13 @@ const ReservationsPage = () => {
       e.endTime = 'End time must be after start time';
     if (!hallForm.numberOfGuests || Number(hallForm.numberOfGuests) < 1)
       e.numberOfGuests = 'At least 1 guest required';
+    // Walk-in validation
+    if (hallForm.isWalkIn) {
+      if (!hallForm.fullName?.trim()) e.fullName = 'Full Name is required';
+      if (!hallForm.phone?.trim()) e.phone = 'Phone number is required';
+      if (!hallForm.email?.trim()) e.email = 'Email is required';
+      if (!hallForm.idNumber?.trim()) e.idNumber = 'ID Number is required';
+    }
     setFormErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -254,9 +316,10 @@ const ReservationsPage = () => {
           specialRequests: roomForm.specialRequests || '',
           isWalkIn: roomForm.isWalkIn,
           ...(roomForm.isWalkIn ? {
-            guestName: roomForm.guestName,
-            guestEmail: roomForm.guestEmail,
-            guestPhone: roomForm.guestPhone,
+            fullName: roomForm.fullName,
+            email: roomForm.email,
+            phone: roomForm.phone,
+            idNumber: roomForm.idNumber,
           } : {}),
         };
         const res = await apiClient.post('/reservations', payload);
@@ -288,6 +351,13 @@ const ReservationsPage = () => {
           checkOutDate: buildISO(hallForm.eventDate, hallForm.endTime),
           numberOfGuests: Number(hallForm.numberOfGuests),
           specialRequests: hallForm.specialRequests || '',
+          isWalkIn: hallForm.isWalkIn,
+          ...(hallForm.isWalkIn ? {
+            fullName: hallForm.fullName,
+            email: hallForm.email,
+            phone: hallForm.phone,
+            idNumber: hallForm.idNumber,
+          } : {}),
         };
         await apiClient.post('/reservations', payload);
         toast.success('Hall reservation created!');
@@ -391,11 +461,20 @@ const ReservationsPage = () => {
     {
       header: 'Guest',
       accessor: (row) => {
-        const c = row.customer || row.customerId;
-        const name = c
-          ? `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.email
-          : row.guestName || 'Guest';
-        const email = c?.email || row.guestEmail || '';
+        const u = row.customerId; // registered user reference
+        const w = row.customer; // walk-in nested object
+        let name = 'Guest';
+        let email = '';
+        if (u && u.firstName) {
+            name = `${u.firstName} ${u.lastName}`.trim() || u.email;
+            email = u.email;
+        } else if (w && w.fullName) {
+            name = w.fullName;
+            email = w.email;
+        } else {
+            name = row.guestName || 'Guest'; // fallback for old records
+            email = row.guestEmail || '';
+        }
         return (
           <div>
             <p className="font-medium text-text-primary text-sm">{name}</p>
@@ -591,14 +670,18 @@ const ReservationsPage = () => {
             {/* Walk-in guest details */}
             {roomForm.isWalkIn && (
               <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 space-y-3">
-                <p className="text-xs font-semibold text-primary uppercase tracking-wide">Guest Information</p>
-                <FormField label="Guest Legal Name" name="guestName" placeholder="Full name as on ID"
-                  value={roomForm.guestName} onChange={handleRoomChange} error={formErrors.guestName} required />
+                <p className="text-xs font-semibold text-primary uppercase tracking-wide">Customer Information</p>
                 <div className="grid grid-cols-2 gap-3">
-                  <FormField label="Phone" name="guestPhone" type="tel" placeholder="+251 9XX XXX XXX"
-                    value={roomForm.guestPhone} onChange={handleRoomChange} error={formErrors.guestPhone} required />
-                  <FormField label="Email" name="guestEmail" type="email" placeholder="guest@email.com"
-                    value={roomForm.guestEmail} onChange={handleRoomChange} error={formErrors.guestEmail} required />
+                  <FormField label="Full Name" name="fullName" placeholder="Full name as on ID"
+                    value={roomForm.fullName} onChange={handleRoomChange} error={formErrors.fullName} required />
+                  <FormField label="ID Number" name="idNumber" placeholder="Passport or National ID"
+                    value={roomForm.idNumber} onChange={handleRoomChange} error={formErrors.idNumber} required />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField label="Phone" name="phone" type="tel" placeholder="+251 9XX XXX XXX"
+                    value={roomForm.phone} onChange={handleRoomChange} error={formErrors.phone} required />
+                  <FormField label="Email" name="email" type="email" placeholder="customer@email.com"
+                    value={roomForm.email} onChange={handleRoomChange} error={formErrors.email} required />
                 </div>
               </div>
             )}
@@ -694,6 +777,37 @@ const ReservationsPage = () => {
         {/* ── HALL FORM ──────────────────────────────────────────────────────── */}
         {resType === 'hall' && (
           <div className="space-y-4">
+            {/* Walk-in toggle — staff only */}
+            {isStaff && (
+              <label className="flex items-center gap-3 p-3 rounded-xl bg-background border border-border cursor-pointer hover:border-primary/30 transition-colors">
+                <input type="checkbox" name="isWalkIn" checked={hallForm.isWalkIn}
+                  onChange={handleHallChange} className="rounded border-border" />
+                <div className="flex items-center gap-2">
+                  <UserPlus size={15} className="text-primary" />
+                  <span className="text-sm font-medium text-text-primary">Walk-in guest (no account)</span>
+                </div>
+              </label>
+            )}
+
+            {/* Walk-in guest details */}
+            {hallForm.isWalkIn && (
+              <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 space-y-3">
+                <p className="text-xs font-semibold text-primary uppercase tracking-wide">Customer Information</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField label="Full Name" name="fullName" placeholder="Full name as on ID"
+                    value={hallForm.fullName} onChange={handleHallChange} error={formErrors.fullName} required />
+                  <FormField label="ID Number" name="idNumber" placeholder="Passport or National ID"
+                    value={hallForm.idNumber} onChange={handleHallChange} error={formErrors.idNumber} required />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField label="Phone" name="phone" type="tel" placeholder="+251 9XX XXX XXX"
+                    value={hallForm.phone} onChange={handleHallChange} error={formErrors.phone} required />
+                  <FormField label="Email" name="email" type="email" placeholder="customer@email.com"
+                    value={hallForm.email} onChange={handleHallChange} error={formErrors.email} required />
+                </div>
+              </div>
+            )}
+
             <FormField
               label="Hall Type" name="hallTypeId" type="select"
               options={[{ value: '', label: 'Choose a hall type...' }, ...hallTypeOptions]}

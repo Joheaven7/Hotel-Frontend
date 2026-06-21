@@ -1,37 +1,46 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { X, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Maximize2, Wifi, Wind, Tv, Waves, Coffee, Star } from 'lucide-react';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import apiClient from '../../services/api';
 import { useThemeStore } from '../../store/themeStore';
 
+// ── Amenity chip icon map ──────────────────────────────────────────────────────
+const amenityIcons = {
+  wifi:      <Wifi size={12} />,
+  ac:        <Wind size={12} />,
+  tv:        <Tv size={12} />,
+  pool:      <Waves size={12} />,
+  breakfast: <Coffee size={12} />,
+};
+
 // ── Static fallback data (beautiful Unsplash images per category) ──────────────
 const fallbackImages = [
   // ROOMS
-  { id: 'f1', src: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=1200&q=80', alt: 'Deluxe Room', category: 'ROOMS' },
-  { id: 'f2', src: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800&q=75&auto=format', alt: 'Garden Terrace Room', category: 'ROOMS' },
-  { id: 'f3', src: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=800&q=75&auto=format', alt: 'Classic Double Room', category: 'ROOMS' },
+  { id: 'f1', src: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=1200&q=80', alt: 'Deluxe Room', category: 'ROOMS', description: 'Spacious king-size bed, elegant décor, panoramic city views, and premium amenities.', amenities: ['wifi', 'ac', 'tv', 'breakfast'] },
+  { id: 'f2', src: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800&q=75&auto=format', alt: 'Garden Terrace Room', category: 'ROOMS', description: 'Private outdoor terrace with lush garden views, soaking tub, and artisan breakfast service.', amenities: ['wifi', 'ac', 'tv', 'breakfast'] },
+  { id: 'f3', src: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=800&q=75&auto=format', alt: 'Classic Double Room', category: 'ROOMS', description: 'Comfortable double beds with fine linens and modern en-suite facilities.', amenities: ['wifi', 'ac', 'tv'] },
   // SUITES
-  { id: 'f4', src: 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=800&q=75&auto=format', alt: 'Executive Suite', category: 'SUITES' },
-  { id: 'f5', src: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&q=75&auto=format', alt: 'Presidential Suite', category: 'SUITES' },
-  { id: 'f6', src: 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800&q=75&auto=format', alt: 'Royal Suite Lounge', category: 'SUITES' },
+  { id: 'f4', src: 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=800&q=75&auto=format', alt: 'Executive Suite', category: 'SUITES', description: 'Separate living area, bespoke furnishings, butler service, and skyline views.', amenities: ['wifi', 'ac', 'tv', 'pool', 'breakfast'] },
+  { id: 'f5', src: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&q=75&auto=format', alt: 'Presidential Suite', category: 'SUITES', description: 'The pinnacle of luxury — private terrace, plunge pool, personal butler, and curated art.', amenities: ['wifi', 'ac', 'tv', 'pool', 'breakfast'] },
+  { id: 'f6', src: 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800&q=75&auto=format', alt: 'Royal Suite Lounge', category: 'SUITES', description: 'Exclusive lounge access with complimentary evening cocktails and hors d\'oeuvres.', amenities: ['wifi', 'ac', 'tv'] },
   // HALLS
-  { id: 'f7', src: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=800&q=75&auto=format', alt: 'Grand Wedding Hall', category: 'HALLS' },
-  { id: 'f8', src: 'https://images.unsplash.com/photo-1431540015161-0bf868a2d407?w=800&q=75&auto=format', alt: 'Conference Center', category: 'HALLS' },
-  { id: 'f9', src: 'https://images.unsplash.com/photo-1530103862676-de8892ebe829?w=800&q=75&auto=format', alt: 'Royal Banquet Hall', category: 'HALLS' },
+  { id: 'f7', src: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=800&q=75&auto=format', alt: 'Grand Wedding Hall', category: 'HALLS', description: 'A breathtaking venue for weddings and large gatherings with crystal chandeliers.', amenities: ['wifi', 'ac', 'pool'] },
+  { id: 'f8', src: 'https://images.unsplash.com/photo-1431540015161-0bf868a2d407?w=800&q=75&auto=format', alt: 'Conference Center', category: 'HALLS', description: 'State-of-art audio/visual equipment for corporate events and seminars.', amenities: ['wifi', 'ac', 'tv'] },
+  { id: 'f9', src: 'https://images.unsplash.com/photo-1530103862676-de8892ebe829?w=800&q=75&auto=format', alt: 'Royal Banquet Hall', category: 'HALLS', description: 'Elegant banquet setting perfect for gala dinners and award ceremonies.', amenities: ['wifi', 'ac'] },
   // AMENITIES
-  { id: 'f10', src: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800&q=75&auto=format', alt: 'Rooftop Pool', category: 'AMENITIES' },
-  { id: 'f11', src: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=800&q=75&auto=format', alt: 'Luxury Spa', category: 'AMENITIES' },
-  { id: 'f12', src: 'https://images.unsplash.com/photo-1600334089648-b0d9d3028eb2?w=800&q=75&auto=format', alt: 'Fitness Center', category: 'AMENITIES' },
+  { id: 'f10', src: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800&q=75&auto=format', alt: 'Rooftop Pool', category: 'AMENITIES', description: 'Infinity edge pool with panoramic views of the city skyline.', amenities: ['pool'] },
+  { id: 'f11', src: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=800&q=75&auto=format', alt: 'Luxury Spa', category: 'AMENITIES', description: 'Rejuvenate your senses with our signature spa treatments and massages.', amenities: ['ac'] },
+  { id: 'f12', src: 'https://images.unsplash.com/photo-1600334089648-b0d9d3028eb2?w=800&q=75&auto=format', alt: 'Fitness Center', category: 'AMENITIES', description: 'Fully equipped modern gym available 24/7 for our guests.', amenities: ['wifi', 'ac'] },
   // DINING
-  { id: 'f13', src: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&q=75&auto=format', alt: 'Fine Dining', category: 'DINING' },
-  { id: 'f14', src: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&q=75&auto=format', alt: 'Restaurant Interior', category: 'DINING' },
-  { id: 'f15', src: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&q=75&auto=format', alt: 'Rooftop Bar', category: 'DINING' },
+  { id: 'f13', src: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&q=75&auto=format', alt: 'Fine Dining', category: 'DINING', description: 'Experience culinary masterpieces prepared by our Michelin-starred chefs.', amenities: ['wifi', 'ac', 'breakfast'] },
+  { id: 'f14', src: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&q=75&auto=format', alt: 'Restaurant Interior', category: 'DINING', description: 'Elegant and intimate atmosphere for the perfect dining experience.', amenities: ['wifi', 'ac'] },
+  { id: 'f15', src: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&q=75&auto=format', alt: 'Rooftop Bar', category: 'DINING', description: 'Sip on signature cocktails while enjoying the breathtaking sunset view.', amenities: ['wifi', 'ac'] },
   // ALL (general hotel showcase)
-  { id: 'f16', src: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&q=75&auto=format', alt: 'Hotel Exterior', category: 'ALL' },
-  { id: 'f17', src: 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800&q=75&auto=format', alt: 'Grand Lobby', category: 'ALL' },
+  { id: 'f16', src: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&q=75&auto=format', alt: 'Hotel Exterior', category: 'ALL', description: 'Our stunning architecture blending modern design with timeless elegance.', amenities: ['wifi', 'ac', 'pool'] },
+  { id: 'f17', src: 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800&q=75&auto=format', alt: 'Grand Lobby', category: 'ALL', description: 'Welcome to luxury. Our grand lobby sets the tone for an unforgettable stay.', amenities: ['wifi', 'ac'] },
 ];
 
 const filters = ['ALL', 'ROOMS', 'SUITES', 'HALLS', 'AMENITIES', 'DINING'];
@@ -89,7 +98,7 @@ function GalleryImage({ item, onClick }) {
       style={{ willChange: 'transform' }}
     >
       {/* Image Container */}
-      <div className="relative overflow-hidden h-[280px]">
+      <div className="relative overflow-hidden h-60">
         {/* Layer 1: Blurred Preview */}
         <div 
           className="absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-700 ease-in-out"
@@ -111,7 +120,7 @@ function GalleryImage({ item, onClick }) {
             setError(true);
             setLoaded(true);
           }}
-          className={`absolute inset-0 w-full h-full object-cover transition-all duration-[1.2s] ease-out group-hover:scale-110 ${
+          className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-out group-hover:scale-110 ${
             loaded ? 'opacity-100' : 'opacity-0'
           }`}
         />
@@ -140,17 +149,60 @@ function GalleryImage({ item, onClick }) {
         </div>
       </div>
 
-      {/* Card body (Title underneath) */}
-      <div className="p-6 relative">
-        <h3 className="font-['Playfair_Display'] text-text-primary dark:text-white text-xl font-semibold mb-2 group-hover:text-[#F2B705] transition-colors duration-300">
+      {/* Card body */}
+      <div className="p-6 relative bg-white dark:bg-[#111111]">
+        <h3 className="font-['Playfair_Display'] text-text-primary dark:text-white text-xl font-semibold mb-2 group-hover:text-[#F2B705] transition-colors duration-300 line-clamp-1">
           {item.alt}
         </h3>
         
-        <div className="flex items-center gap-2 text-text-secondary dark:text-white/50 font-['Inter'] text-xs tracking-widest uppercase mt-4">
-          <Maximize2 size={12} className="text-[#F2B705]" />
-          <span>View Image</span>
-        </div>
+        {item.description && (
+          <p className="font-['Inter'] text-text-secondary dark:text-white/50 text-sm leading-relaxed mb-4 line-clamp-2">
+            {item.description}
+          </p>
+        )}
+
+        {/* Amenity chips */}
+        {item.amenities && item.amenities.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-5">
+            {item.amenities.slice(0, 4).map((a) => (
+              <span
+                key={a}
+                className="flex items-center gap-1.5 font-['Inter'] text-[10px] text-text-secondary dark:text-white/50 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-full px-2.5 py-1"
+              >
+                {amenityIcons[a.toLowerCase()] || <Wifi size={12} />}
+                {a.charAt(0).toUpperCase() + a.slice(1)}
+              </span>
+            ))}
+          </div>
+        )}
         
+        <div className="flex items-center justify-between">
+          <div>
+             {item.price ? (
+                <>
+                  <span className="font-['Playfair_Display'] text-[#F2B705] text-2xl font-bold">
+                    ${item.price}
+                  </span>
+                  <span className="font-['Inter'] text-text-secondary/70 dark:text-white/40 text-xs ml-1">/night</span>
+                </>
+             ) : (
+                <span className="font-['Playfair_Display'] text-[#F2B705] text-lg font-semibold">
+                  Discover
+                </span>
+             )}
+          </div>
+          <div className="group/btn flex items-center gap-2 font-['Inter'] text-[#F2B705] text-sm font-semibold tracking-wide">
+            View Image
+            {/* underline draw */}
+            <span className="block relative">
+              <span className="relative flex items-center gap-1">
+                <span className="absolute bottom-0 left-0 h-px bg-[#F2B705] w-0 group-hover/btn:w-full transition-all duration-300" />
+                <Maximize2 size={16} />
+              </span>
+            </span>
+          </div>
+        </div>
+
         {/* Gold glow border for bottom half on hover */}
         <div
           className="absolute inset-0 rounded-b-[24px] transition-all duration-300 pointer-events-none"
@@ -177,55 +229,34 @@ export default function GalleryPage() {
   // Fetch API images and merge with fallbacks
   useEffect(() => {
     window.scrollTo(0, 0);
-    Promise.allSettled([
-      apiClient.get('/room-types/public'),
-      apiClient.get('/hall-types/public')
-    ]).then(([roomRes, hallRes]) => {
+    apiClient.get('/types').then((res) => {
       let apiImages = [];
-
-      if (roomRes.status === 'fulfilled') {
-        (roomRes.value.data.roomTypes || []).forEach((rt, i) => {
-          (rt.images || []).forEach((imgPath, j) => {
-            const resolvedUrl = resolveImageUrl(imgPath);
-            // Only use images that are full http URLs (uploaded to cloud/CDN)
-            if (resolvedUrl && resolvedUrl.startsWith('http')) {
-              apiImages.push({
-                id: `api-r-${i}-${j}`,
-                src: resolvedUrl,
-                alt: rt.name,
-                category: rt.name.toLowerCase().includes('suite') ? 'SUITES' : 'ROOMS'
-              });
-            }
-          });
+      const fetchedTypes = res.data.types || [];
+      
+      fetchedTypes.forEach((t, i) => {
+        (t.images || []).forEach((imgPath, j) => {
+          const resolvedUrl = resolveImageUrl(imgPath);
+          if (resolvedUrl && resolvedUrl.startsWith('http')) {
+            apiImages.push({
+              id: `api-${t.category}-${i}-${j}`,
+              src: resolvedUrl,
+              alt: t.name,
+              category: t.category === 'HALL' ? 'HALLS' : (t.name.toLowerCase().includes('suite') ? 'SUITES' : 'ROOMS'),
+              description: t.description || `Experience our beautiful ${t.name}.`,
+              amenities: t.amenities || [],
+              price: t.price || t.basePricePerHour || t.basePricePerNight,
+            });
+          }
         });
-      }
-
-      if (hallRes.status === 'fulfilled') {
-        (hallRes.value.data.hallTypes || []).forEach((ht, i) => {
-          (ht.images || []).forEach((imgPath, j) => {
-            const resolvedUrl = resolveImageUrl(imgPath);
-            if (resolvedUrl && resolvedUrl.startsWith('http')) {
-              apiImages.push({
-                id: `api-h-${i}-${j}`,
-                src: resolvedUrl,
-                alt: ht.name,
-                category: 'HALLS'
-              });
-            }
-          });
-        });
-      }
+      });
 
       // Always keep fallbacks to ensure every category has images.
-      // API images are added on top of the fallbacks.
       if (apiImages.length > 0) {
-        // Deduplicate: remove fallbacks for categories that now have real API images
         const apiCategories = new Set(apiImages.map(img => img.category));
         const keptFallbacks = fallbackImages.filter(f => !apiCategories.has(f.category));
         setImages([...apiImages, ...keptFallbacks]);
       }
-      // If no API images, fallbackImages stay as the default (set in useState init)
-    });
+    }).catch(err => console.error('Failed to fetch types:', err));
   }, []);
 
   // Lightbox keyboard nav

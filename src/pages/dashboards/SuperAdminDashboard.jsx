@@ -10,6 +10,7 @@ import {
 import PageHeader from '../../components/ui/PageHeader';
 import StatCard from '../../components/ui/StatCard';
 import { CardSkeleton } from '../../components/ui/LoadingSkeleton';
+import { onSocketEvent, offSocketEvent } from '../../services/socket';
 import {
   AreaChart, Area, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -58,6 +59,30 @@ const SuperAdminDashboard = () => {
   };
 
   useEffect(() => { fetchAll(); }, [dateRange]);
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      fetchAll();
+    };
+    onSocketEvent('reservation:autoCheckout', handleUpdate);
+    onSocketEvent('reservation:created', handleUpdate);
+    onSocketEvent('reservation:confirmed', handleUpdate);
+    onSocketEvent('reservation:checkedIn', handleUpdate);
+    onSocketEvent('reservation:checkedOut', handleUpdate);
+    onSocketEvent('reservation:cancelled', handleUpdate);
+    onSocketEvent('reservation:deleted', handleUpdate);
+    onSocketEvent('reservation:restored', handleUpdate);
+    return () => {
+      offSocketEvent('reservation:autoCheckout', handleUpdate);
+      offSocketEvent('reservation:created', handleUpdate);
+      offSocketEvent('reservation:confirmed', handleUpdate);
+      offSocketEvent('reservation:checkedIn', handleUpdate);
+      offSocketEvent('reservation:checkedOut', handleUpdate);
+      offSocketEvent('reservation:cancelled', handleUpdate);
+      offSocketEvent('reservation:deleted', handleUpdate);
+      offSocketEvent('reservation:restored', handleUpdate);
+    };
+  }, [dateRange]);
 
   // Time-series chart data
   const chartData = (analytics?.dailyRevenue || []).map((item) => {

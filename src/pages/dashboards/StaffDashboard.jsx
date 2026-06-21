@@ -38,14 +38,29 @@ const StaffDashboard = () => {
     fetchData();
   }, []);
 
-  // Real-time: cron auto-checkout updates counter
+  // Real-time: reservation events update stats
   useEffect(() => {
-    const handleAutoCheckout = () => {
-      // Re-fetch to get updated counts
+    const handleUpdate = () => {
       fetchData();
     };
-    onSocketEvent('reservation:autoCheckout', handleAutoCheckout);
-    return () => offSocketEvent('reservation:autoCheckout', handleAutoCheckout);
+    onSocketEvent('reservation:autoCheckout', handleUpdate);
+    onSocketEvent('reservation:created', handleUpdate);
+    onSocketEvent('reservation:confirmed', handleUpdate);
+    onSocketEvent('reservation:checkedIn', handleUpdate);
+    onSocketEvent('reservation:checkedOut', handleUpdate);
+    onSocketEvent('reservation:cancelled', handleUpdate);
+    onSocketEvent('reservation:deleted', handleUpdate);
+    onSocketEvent('reservation:restored', handleUpdate);
+    return () => {
+      offSocketEvent('reservation:autoCheckout', handleUpdate);
+      offSocketEvent('reservation:created', handleUpdate);
+      offSocketEvent('reservation:confirmed', handleUpdate);
+      offSocketEvent('reservation:checkedIn', handleUpdate);
+      offSocketEvent('reservation:checkedOut', handleUpdate);
+      offSocketEvent('reservation:cancelled', handleUpdate);
+      offSocketEvent('reservation:deleted', handleUpdate);
+      offSocketEvent('reservation:restored', handleUpdate);
+    };
   }, []);
 
   if (error) {
