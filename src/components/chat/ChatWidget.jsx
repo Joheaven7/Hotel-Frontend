@@ -134,7 +134,7 @@ const ChatWidget = () => {
         const optimistic = {
             _id: `tmp-${Date.now()}`,
             text: text.trim(),
-            sender: { _id: user._id, firstName: user.firstName, lastName: user.lastName },
+            senderId: { _id: user._id, firstName: user.firstName, lastName: user.lastName },
             createdAt: new Date().toISOString(),
             readBy: [{ userId: user._id }],
         };
@@ -253,8 +253,8 @@ const ChatWidget = () => {
                                 </div>
 
                                 {messages.map((msg) => {
-                                    const isMine = msg.sender?._id?.toString() === user._id?.toString()
-                                        || msg.sender?.toString() === user._id?.toString();
+                                    const isMine = msg.senderId?._id?.toString() === user._id?.toString()
+                                        || msg.senderId?.toString() === user._id?.toString();
                                     return (
                                         <div key={msg._id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
                                             <div className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm leading-relaxed ${isMine
@@ -263,7 +263,7 @@ const ChatWidget = () => {
                                                 }`}>
                                                 {!isMine && (
                                                     <p className="text-[10px] font-semibold text-primary mb-0.5">
-                                                        {msg.sender?.firstName} {msg.sender?.role === 'STAFF' ? '· Staff' : ''}
+                                                        {msg.senderId?.firstName} {msg.senderId?.role === 'STAFF' ? '· Staff' : ''}
                                                     </p>
                                                 )}
                                                 <p>{msg.text}</p>

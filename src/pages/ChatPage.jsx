@@ -10,10 +10,13 @@ import PageHeader from '../components/ui/PageHeader';
 import toast from 'react-hot-toast';
 
 const DEPARTMENTS = [
-    { id: 'front_desk', name: 'Front Desk' },
-    { id: 'housekeeping', name: 'Housekeeping' },
-    { id: 'maintenance', name: 'Maintenance' },
-    { id: 'management', name: 'Management' },
+    { id: 'Front Desk', name: 'Front Desk' },
+    { id: 'Housekeeping', name: 'Housekeeping' },
+    { id: 'Maintenance', name: 'Maintenance' },
+    { id: 'Administration', name: 'Administration' },
+    { id: 'Finance', name: 'Finance' },
+    { id: 'Human Resources', name: 'Human Resources' },
+    { id: 'Security', name: 'Security' },
 ];
 
 const ChatPage = () => {
@@ -360,7 +363,7 @@ const ChatPage = () => {
                                     <div className="flex items-center justify-center py-12"><Loader2 className="animate-spin text-primary" /></div>
                                 ) : (
                                     messages.map((msg) => {
-                                        const isMine = msg.sender?._id === user._id || msg.sender === user._id;
+                                        const isMine = msg.senderId?._id === user._id || msg.senderId === user._id;
                                         return (
                                             <div key={msg._id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
                                                 <div className={`max-w-[70%] rounded-2xl p-3 text-sm shadow-soft ${isMine
@@ -369,7 +372,7 @@ const ChatPage = () => {
                                                     }`}>
                                                     {!isMine && (
                                                         <p className="text-[10px] font-bold text-primary mb-1">
-                                                            {msg.sender?.firstName || 'Guest'} {msg.sender?.role ? `(${msg.sender.role})` : ''}
+                                                            {msg.senderId?.firstName || 'Guest'} {msg.senderId?.role ? `(${msg.senderId.role})` : ''}
                                                         </p>
                                                     )}
                                                     <p className="leading-relaxed whitespace-pre-wrap">{msg.text}</p>
