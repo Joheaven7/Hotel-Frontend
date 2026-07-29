@@ -90,15 +90,16 @@ const ManagerDashboard = () => {
             />
 
             {/* Stats Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                 {loading ? (
                     <><CardSkeleton /><CardSkeleton /><CardSkeleton /><CardSkeleton /></>
                 ) : (
                     <>
                         <StatCard title="Total Revenue" value={`ETB ${(data?.totalRevenue || 0).toLocaleString()}`} icon={DollarSign} color="primary" />
                         <StatCard title="Occupancy Rate" value={`${data?.occupancyRate || 0}%`} icon={Home} color="secondary" />
-                        <StatCard title="Pending Reservations" value={data?.pendingReservations || 0} icon={Clock} color="warning" />
-                        <StatCard title="Open Maintenance" value={data?.maintenanceStatus?.open || 0} icon={Wrench} color="error" />
+                        <StatCard title="Food Sales" value={`ETB ${(data?.foodSales?.revenue || 0).toLocaleString()}`} icon={CheckCircle} color="success" />
+                        <StatCard title="Pending Res." value={data?.pendingReservations || 0} icon={Clock} color="warning" />
+                        <StatCard title="Open Maint." value={data?.maintenanceStatus?.open || 0} icon={Wrench} color="error" />
                     </>
                 )}
             </div>

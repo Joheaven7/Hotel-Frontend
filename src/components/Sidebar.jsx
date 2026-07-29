@@ -1,14 +1,15 @@
 import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { usePermissions } from '../../../portal/src/utils/permissions';
 import {
   LayoutDashboard, BedDouble, CalendarDays, CreditCard,
   Users, Wrench, BarChart3, Tent, LogOut, Hotel,
   Banknote, UserCog, FileSearch, Tag, MessageSquare,
-  MessageSquareDot, Sparkles, ClipboardList
+  MessageSquareDot, Sparkles, ClipboardList,
+  Building2, Shield, KeyRound, Utensils, ChefHat, Truck
 } from 'lucide-react';
 
-// ── Role badge config ─────────────────────────────────────────────────────────
 const ROLE_BADGES = {
   SUPER_ADMIN: { label: 'Super Admin', color: 'bg-gold/20 text-gold' },
   ADMIN: { label: 'Admin', color: 'bg-primary/20 text-primary' },
@@ -16,109 +17,45 @@ const ROLE_BADGES = {
   HR: { label: 'HR', color: 'bg-indigo-500/20 text-indigo-300' },
   ACCOUNTANT: { label: 'Accountant', color: 'bg-success/20 text-success' },
   STAFF: { label: 'Staff', color: 'bg-warning/20 text-warning' },
-  CUSTOMER: { label: 'Guest', color: 'bg-blue-500/20 text-blue-300' },
 };
 
-// ── Menu items per role ───────────────────────────────────────────────────────
-const MENU = {
-  SUPER_ADMIN: [
-    { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { label: 'Rooms', path: '/rooms', icon: BedDouble },
-    { label: 'Room Types', path: '/room-types', icon: Tag },
-    { label: 'Halls', path: '/halls', icon: Tent },
-    { label: 'Hall Types', path: '/hall-types', icon: Tag },
-    { label: 'Reservations', path: '/reservations', icon: CalendarDays },
-    { label: 'Payments', path: '/payments', icon: CreditCard },
-    { label: 'Payroll', path: '/payroll', icon: Banknote },
-    { label: 'Users', path: '/users', icon: UserCog },
-    { label: 'Maintenance', path: '/maintenance', icon: Wrench },
-    { label: 'Housekeeping', path: '/housekeeping', icon: Sparkles },
-    { label: 'Reports', path: '/reports', icon: BarChart3 },
-    { label: 'Complaints', path: '/complaints', icon: MessageSquare },
-    { label: 'Live Chat', path: '/chat', icon: MessageSquareDot },
-    { label: 'Audit Logs', path: '/audit-logs', icon: FileSearch },
-    { label: 'My Profile', path: '/profile', icon: UserCog },
-  ],
-  ADMIN: [
-    { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { label: 'Rooms', path: '/rooms', icon: BedDouble },
-    { label: 'Room Types', path: '/room-types', icon: Tag },
-    { label: 'Halls', path: '/halls', icon: Tent },
-    { label: 'Hall Types', path: '/hall-types', icon: Tag },
-    { label: 'Reservations', path: '/reservations', icon: CalendarDays },
-    { label: 'Payments', path: '/payments', icon: CreditCard },
-    { label: 'Users', path: '/users', icon: UserCog },
-    { label: 'Maintenance', path: '/maintenance', icon: Wrench },
-    { label: 'Housekeeping', path: '/housekeeping', icon: Sparkles },
-    { label: 'Reports', path: '/reports', icon: BarChart3 },
-    { label: 'Complaints', path: '/complaints', icon: MessageSquare },
-    { label: 'Live Chat', path: '/chat', icon: MessageSquareDot },
-    { label: 'My Profile', path: '/profile', icon: UserCog },
-  ],
-  MANAGER: [
-    { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { label: 'Rooms', path: '/rooms', icon: BedDouble },
-    { label: 'Room Types', path: '/room-types', icon: Tag },
-    { label: 'Halls', path: '/halls', icon: Tent },
-    { label: 'Hall Types', path: '/hall-types', icon: Tag },
-    { label: 'Reservations', path: '/reservations', icon: CalendarDays },
-    { label: 'Payments', path: '/payments', icon: CreditCard },
-    { label: 'Users', path: '/users', icon: UserCog },
-    { label: 'Maintenance', path: '/maintenance', icon: Wrench },
-    { label: 'Housekeeping', path: '/housekeeping', icon: Sparkles },
-    { label: 'Reports', path: '/reports', icon: BarChart3 },
-    { label: 'Complaints', path: '/complaints', icon: MessageSquare },
-    { label: 'Live Chat', path: '/chat', icon: MessageSquareDot },
-    { label: 'My Profile', path: '/profile', icon: UserCog },
-  ],
-  HR: [
-    { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { label: 'Employees', path: '/users', icon: Users },
-    { label: 'Payroll', path: '/payroll', icon: Banknote },
-    { label: 'Reports', path: '/reports', icon: BarChart3 },
-    { label: 'Complaints', path: '/complaints', icon: MessageSquare },
-    { label: 'My Profile', path: '/profile', icon: UserCog },
-  ],
-  ACCOUNTANT: [
-    { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { label: 'Payments', path: '/payments', icon: CreditCard },
-    { label: 'Payroll', path: '/payroll', icon: Banknote },
-    { label: 'Reports', path: '/reports', icon: BarChart3 },
-    { label: 'Complaints', path: '/complaints', icon: MessageSquare },
-    { label: 'My Profile', path: '/profile', icon: UserCog },
-  ],
-  STAFF: [
-    { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { label: 'Rooms', path: '/rooms', icon: BedDouble },
-    { label: 'Halls', path: '/halls', icon: Tent },
-    { label: 'Reservations', path: '/reservations', icon: CalendarDays },
-    { label: 'Maintenance', path: '/maintenance', icon: Wrench },
-    { label: 'Housekeeping', path: '/housekeeping', icon: Sparkles },
-    { label: 'Complaints', path: '/complaints', icon: MessageSquare },
-    { label: 'Live Chat', path: '/chat', icon: MessageSquareDot },
-    { label: 'My Profile', path: '/profile', icon: UserCog },
-  ],
-  CUSTOMER: [
-    { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { label: 'My Reservations', path: '/reservations', icon: CalendarDays },
-    { label: 'My Payments', path: '/payments', icon: CreditCard },
-    { label: 'Feedback', path: '/complaints', icon: MessageSquare },
-    { label: 'My Profile', path: '/profile', icon: UserCog },
-  ],
-};
+const MENU_ITEMS = [
+  { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, permission: 'dashboard.view' },
+  { label: 'Rooms', path: '/rooms', icon: BedDouble, permission: 'rooms.view' },
+  { label: 'Room Types', path: '/room-types', icon: Tag, permission: 'rooms.view' },
+  { label: 'Halls', path: '/halls', icon: Tent, permission: 'halls.view' },
+  { label: 'Hall Types', path: '/hall-types', icon: Tag, permission: 'halls.view' },
+  { label: 'Reservations', path: '/reservations', icon: CalendarDays, permission: 'reservations.view' },
+  { label: 'Payments', path: '/payments', icon: CreditCard, permission: 'payments.view' },
+  { label: 'Payroll', path: '/payroll', icon: Banknote, permission: 'payroll.view' },
+  { label: 'Users', path: '/users', icon: UserCog, permission: 'users.view' },
+  { label: 'Departments', path: '/departments', icon: Building2, permission: 'users.view' },
+  { label: 'Roles', path: '/roles', icon: Shield, permission: 'users.view' },
+  { label: 'Permissions', path: '/permissions', icon: KeyRound, permission: 'users.managePermissions' },
+  { label: 'Restaurant', path: '/restaurant', icon: Utensils, permission: 'dashboard.view' },
+  { label: 'Kitchen Station', path: '/kitchen', icon: ChefHat, permission: 'dashboard.view' },
+  { label: 'Room Service', path: '/room-service', icon: Truck, permission: 'dashboard.view' },
+  { label: 'Maintenance', path: '/maintenance', icon: Wrench, permission: 'maintenance.view' },
+  { label: 'Housekeeping', path: '/housekeeping', icon: Sparkles, permission: 'rooms.view' },
+  { label: 'Reports', path: '/reports', icon: BarChart3, permission: 'reports.view' },
+  { label: 'Complaints', path: '/complaints', icon: MessageSquare, permission: 'dashboard.view' },
+  { label: 'Live Chat', path: '/chat', icon: MessageSquareDot, permission: 'chat.private' },
+  { label: 'Audit Logs', path: '/audit-logs', icon: FileSearch, permission: 'system.auditLogs' },
+  { label: 'My Profile', path: '/profile', icon: UserCog, permission: 'dashboard.view' },
+];
 
-// ─────────────────────────────────────────────────────────────────────────────
 const Sidebar = ({ isOpen }) => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
+  const { hasPermission } = usePermissions();
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
-  const menuItems = MENU[user?.role] || [];
+  const menuItems = MENU_ITEMS.filter(item => hasPermission(item.permission));
   const badge = ROLE_BADGES[user?.role] || { label: user?.role, color: 'bg-white/10 text-white' };
 
   const isActive = (path) => {

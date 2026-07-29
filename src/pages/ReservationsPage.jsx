@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Plus, CheckCircle, LogIn, LogOut, XCircle, Eye,
-  BedDouble, Landmark, Clock, AlertCircle, UserPlus,
+  BedDouble, Landmark, Clock, AlertCircle, UserPlus, Trash2,
 } from 'lucide-react';
 import { format, isValid } from 'date-fns';
 import { useLocation } from 'react-router-dom';
@@ -13,6 +13,7 @@ import DataTable from '../components/ui/DataTable';
 import Modal from '../components/ui/Modal';
 import FormField from '../components/ui/FormField';
 import StatusBadge from '../components/ui/StatusBadge';
+import { usePermissions } from '../../../portal/src/utils/permissions';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const safeFormat = (d, fmt = 'MMM dd, yyyy') => {
@@ -30,11 +31,7 @@ const calcHallHours = (s, e) => {
 };
 
 // ── Role helpers ──────────────────────────────────────────────────────────────
-const CAN_CONFIRM = ['SUPER_ADMIN', 'ADMIN', 'MANAGER'];
-const CAN_CHECKIN = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'STAFF'];
-const CAN_CHECKOUT = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'STAFF'];
-const CAN_CANCEL = ['SUPER_ADMIN', 'ADMIN', 'MANAGER'];
-const IS_STAFF = ['STAFF', 'ADMIN', 'SUPER_ADMIN', 'MANAGER'];
+// Gated dynamically by usePermissions now
 
 // ── Availability checker component ───────────────────────────────────────────
 const RoomAvailabilityChecker = ({ roomTypeId, checkInDate, checkOutDate, numberOfGuests, onResult }) => {
@@ -134,9 +131,9 @@ const EMPTY_HALL = {
 // ─────────────────────────────────────────────────────────────────────────────
 const ReservationsPage = () => {
   const { user } = useAuthStore();
-  const role = user?.role || '';
+  const { hasPermission } = usePermissions();
   const location = useLocation();
-  const isStaff = IS_STAFF.includes(role);
+  const isStaff = hasPermission('reservations.create');
 
   const [reservations, setReservations] = useState([]);
   const [roomTypes, setRoomTypes] = useState([]);
@@ -144,11 +141,12 @@ const ReservationsPage = () => {
   const [loading, setLoading] = useState(true);
   const [urlSearch, setUrlSearch] = useState('');
 
-  // Modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [resType, setResType] = useState('room'); // 'room' | 'hall'
   const [viewModal, setViewModal] = useState(false);
   const [selected, setSelected] = useState(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   // Forms
   const [roomForm, setRoomForm] = useState(EMPTY_ROOM);
@@ -380,8 +378,13 @@ const ReservationsPage = () => {
   const handleAction = async (reservationId, action) => {
     setActionLoading(`${reservationId}-${action}`);
     try {
-      await apiClient.post(`/reservations/${reservationId}/${action}`);
-      toast.success(`Reservation ${action.replace('-', ' ')} successful`);
+      if (action === 'delete') {
+        await apiClient.delete(`/reservations/${reservationId}`);
+        toast.success('Reservation deleted successfully');
+      } else {
+        await apiClient.post(`/reservations/${reservationId}/${action}`);
+        toast.success(`Reservation ${action.replace('-', ' ')} successful`);
+      }
       if (viewModal) setViewModal(false);
       setTimeout(fetchData, 500);
     } catch (err) {
@@ -389,6 +392,18 @@ const ReservationsPage = () => {
     } finally {
       setActionLoading('');
     }
+  };
+
+  const confirmDelete = (reservation) => {
+    setDeleteTarget(reservation);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleteConfirmOpen(false);
+    await handleAction(deleteTarget._id, 'delete');
+    setDeleteTarget(null);
   };
 
   // ── Form helpers ─────────────────────────────────────────────────────────────
@@ -538,12 +553,11 @@ const ReservationsPage = () => {
     {
       header: 'Actions',
       accessor: (row) => {
-        const isMine = row.customerId?._id === user?._id || row.customerId === user?._id;
-        const canConf = CAN_CONFIRM.includes(role) && row.status === 'PENDING';
-        const canIn = CAN_CHECKIN.includes(role) && row.status === 'CONFIRMED';
-        const canOut = CAN_CHECKOUT.includes(role) && row.status === 'CHECKED_IN';
-        const canCan = (CAN_CANCEL.includes(role) || (role === 'CUSTOMER' && isMine))
-          && !['CANCELLED', 'CHECKED_OUT'].includes(row.status);
+        const canConf = hasPermission('reservations.approve') && row.status === 'PENDING';
+        const canIn = hasPermission('reservations.edit') && row.status === 'CONFIRMED';
+        const canOut = hasPermission('reservations.edit') && row.status === 'CHECKED_IN';
+        const canCan = hasPermission('reservations.cancel') && !['CANCELLED', 'CHECKED_OUT'].includes(row.status);
+        const canDelete = user?.role === 'SUPER_ADMIN';
         return (
           <div className="flex items-center gap-1">
             <button
@@ -577,8 +591,17 @@ const ReservationsPage = () => {
             {canCan && (
               <button onClick={() => handleAction(row._id, 'cancel')}
                 disabled={actionLoading === `${row._id}-cancel`}
-                className="p-1.5 rounded-lg text-error hover:bg-error/10 disabled:opacity-50">
+                className="p-1.5 rounded-lg text-error hover:bg-error/10 disabled:opacity-50"
+                title="Cancel">
                 <XCircle size={14} />
+              </button>
+            )}
+            {canDelete && (
+              <button onClick={() => confirmDelete(row)}
+                disabled={actionLoading === `${row._id}-delete`}
+                className="p-1.5 rounded-lg text-error hover:bg-error/10 disabled:opacity-50"
+                title="Delete">
+                <Trash2 size={14} />
               </button>
             )}
           </div>
@@ -964,13 +987,16 @@ const ReservationsPage = () => {
 
             {/* Action buttons in detail modal */}
             {(() => {
+              const role = user?.role;
               const isMine = selected.customerId?._id === user?._id || selected.customerId === user?._id;
-              const canConf = CAN_CONFIRM.includes(role) && selected.status === 'PENDING';
-              const canIn = CAN_CHECKIN.includes(role) && selected.status === 'CONFIRMED';
-              const canOut = CAN_CHECKOUT.includes(role) && selected.status === 'CHECKED_IN';
-              const canCan = (CAN_CANCEL.includes(role) || (role === 'CUSTOMER' && isMine))
+              const canConf = hasPermission('reservations.approve') && selected.status === 'PENDING';
+              const canIn = hasPermission('reservations.edit') && selected.status === 'CONFIRMED';
+              const canOut = hasPermission('reservations.edit') && selected.status === 'CHECKED_IN';
+              const canCan = (hasPermission('reservations.cancel') || (role === 'CUSTOMER' && isMine))
                 && !['CANCELLED', 'CHECKED_OUT'].includes(selected.status);
-              if (!canConf && !canIn && !canOut && !canCan) return null;
+              const canDelete = role === 'SUPER_ADMIN';
+
+              if (!canConf && !canIn && !canOut && !canCan && !canDelete) return null;
               return (
                 <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
                   {canConf && (
@@ -1001,11 +1027,46 @@ const ReservationsPage = () => {
                       Cancel
                     </button>
                   )}
+                  {canDelete && (
+                    <button onClick={() => confirmDelete(selected)}
+                      disabled={actionLoading === `${selected._id}-delete`}
+                      className="flex-1 py-2 rounded-btn text-sm font-semibold bg-error/10 text-error hover:bg-error/20 disabled:opacity-50">
+                      Delete
+                    </button>
+                  )}
                 </div>
               );
             })()}
           </div>
         )}
+      </Modal>
+
+      {/* ── Delete Confirmation Modal ────────────────────────────────────────── */}
+      <Modal
+        isOpen={deleteConfirmOpen}
+        onClose={() => { setDeleteConfirmOpen(false); setDeleteTarget(null); }}
+        title="Delete Reservation?"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-text-secondary">
+            This action cannot be undone.
+          </p>
+          <div className="flex justify-end gap-2 pt-2 border-t border-border">
+            <button
+              onClick={() => { setDeleteConfirmOpen(false); setDeleteTarget(null); }}
+              className="px-4 py-2 rounded-btn border border-border text-text-primary hover:bg-background transition-colors text-sm font-medium"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDelete}
+              className="px-4 py-2 rounded-btn bg-error text-white hover:bg-error/90 transition-colors text-sm font-semibold"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

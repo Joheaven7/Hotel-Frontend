@@ -3,7 +3,6 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 import { showToast } from '../../services/toast';
-import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import ThemeToggle from '../common/ThemeToggle';
 
@@ -21,7 +20,6 @@ export default function Navbar() {
   const [activeId,  setActiveId]  = useState('');
   const navigate  = useNavigate();
   const location  = useLocation();
-  const user      = useAuthStore((s) => s.user);
   const { theme, toggleTheme } = useThemeStore();
 
   // ── Scroll → solid nav ──────────────────────────────────────────────────────
@@ -72,12 +70,12 @@ export default function Navbar() {
 
   const handleBookNow = () => {
     setIsOpen(false);
-    if (!user) {
-      showToast.info('Please login to book a room');
-      navigate('/login');
-      return;
+    if (location.pathname !== '/') {
+      navigate('/#booking');
+    } else {
+      const el = document.getElementById('booking');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
     }
-    navigate('/reservations');
   };
 
   const isActive = (item) => {
@@ -159,23 +157,13 @@ export default function Navbar() {
             <div className="hidden lg:flex items-center gap-4 ml-6">
                 <ThemeToggle className="hover:scale-105" />
                 
-                {!user && (
-                <Link
-                  to="/login"
-                  className={`font-['Inter'] font-medium text-sm transition-colors duration-300 ${
-                    isLandingHero ? 'text-white/70 hover:text-white' : 'text-[#555] dark:text-white/70 hover:text-[#0F5B4F] dark:hover:text-[#F2B705]'
-                  }`}
-                >
-                  Sign In
-                </Link>
-              )}
               <motion.button
                 onClick={handleBookNow}
                 whileHover={{ scale: 1.05, boxShadow: '0 6px 25px rgba(242,183,5,0.5)' }}
                 whileTap={{ scale: 0.97 }}
                 className="relative overflow-hidden bg-[#F2B705] text-[#0F5B4F] font-['Inter'] font-bold text-xs tracking-[0.12em] uppercase px-6 py-2.5 rounded-full shadow-glow-gold-sm cursor-pointer"
               >
-                <span className="relative z-10">{user ? 'My Bookings' : 'Book Now'}</span>
+                <span className="relative z-10">Book Now</span>
               </motion.button>
             </div>
 
@@ -259,20 +247,11 @@ export default function Navbar() {
 
               {/* Mobile CTAs */}
               <div className="flex flex-col gap-3">
-                {!user && (
-                  <Link
-                    to="/login"
-                    onClick={() => setIsOpen(false)}
-                    className="text-center py-3 px-6 rounded-full border border-black/20 dark:border-white/20 text-text-primary dark:text-white font-['Inter'] font-medium text-sm hover:border-black/50 dark:hover:border-white/50 transition-colors"
-                  >
-                    Sign In
-                  </Link>
-                )}
                 <button
                   onClick={handleBookNow}
                   className="bg-[#F2B705] text-[#0F5B4F] font-['Inter'] font-bold text-sm tracking-wide uppercase py-3 px-6 rounded-full shadow-glow-gold cursor-pointer"
                 >
-                  {user ? 'My Bookings' : 'Book Now'}
+                  Book Now
                 </button>
               </div>
 

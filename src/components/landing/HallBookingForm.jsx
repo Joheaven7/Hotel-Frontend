@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, Users, Landmark, ChevronDown, Search, CheckCircle, XCircle, ArrowRight, Clock } from 'lucide-react';
 import { showToast } from '../../services/toast';
 import apiClient from '../../services/api';
-import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 
 export default function HallBookingForm({ hallTypes }) {
@@ -19,7 +18,6 @@ export default function HallBookingForm({ hallTypes }) {
   const [result, setResult] = useState(null);
 
   const navigate = useNavigate();
-  const user = useAuthStore((s) => s.user);
   const theme = useThemeStore((s) => s.theme);
 
   // Set default selected hall type when hallTypes are loaded
@@ -115,13 +113,7 @@ export default function HallBookingForm({ hallTypes }) {
       availableUnits: result?.availableUnits || []
     };
 
-    if (!user) {
-      sessionStorage.setItem('pendingReservation', JSON.stringify(reservationData));
-      showToast.success('Search saved. Redirecting to login to complete reservation...');
-      navigate('/login');
-    } else {
-      navigate('/reservations', { state: reservationData });
-    }
+    navigate('/booking/confirm', { state: reservationData });
   };
 
   const selectedTypeData = hallTypes.find(t => t._id === selectedType);

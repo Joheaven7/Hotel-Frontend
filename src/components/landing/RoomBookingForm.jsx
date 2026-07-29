@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, Users, BedDouble, ChevronDown, Search, CheckCircle, XCircle, ArrowRight } from 'lucide-react';
 import { showToast } from '../../services/toast';
 import apiClient from '../../services/api';
-import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 
 export default function RoomBookingForm({ roomTypes }) {
@@ -17,7 +16,6 @@ export default function RoomBookingForm({ roomTypes }) {
   const [result, setResult] = useState(null);
 
   const navigate = useNavigate();
-  const user = useAuthStore((s) => s.user);
   const theme = useThemeStore((s) => s.theme);
 
   // Set default selected room type when roomTypes are loaded
@@ -86,15 +84,7 @@ export default function RoomBookingForm({ roomTypes }) {
       availableUnits: result?.availableUnits || []
     };
 
-    if (!user) {
-      // Save pending reservation in sessionStorage
-      sessionStorage.setItem('pendingReservation', JSON.stringify(reservationData));
-      showToast.success('Search saved. Redirecting to login to complete reservation...');
-      navigate('/login');
-    } else {
-      // Navigate straight to reservation page
-      navigate('/reservations', { state: reservationData });
-    }
+    navigate('/booking/confirm', { state: reservationData });
   };
 
   const selectedTypeData = roomTypes.find(t => t._id === selectedType);

@@ -15,7 +15,7 @@ import StatusBadge from '../components/ui/StatusBadge';
 import FormField from '../components/ui/FormField';
 import StatCard from '../components/ui/StatCard';
 
-const ROLES = ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT', 'STAFF', 'CUSTOMER'];
+const ROLES = ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT', 'STAFF'];
 
 const ROLE_COLORS = {
   SUPER_ADMIN: 'bg-error/10 text-error border-error/20',

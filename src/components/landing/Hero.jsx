@@ -62,16 +62,12 @@ export default function Hero() {
   }, []);
 
   const handleBookNow = () => {
-    if (!user) {
-      showToast.info('Please login to book a room');
-      navigate('/login');
-      return;
-    }
-    navigate('/rooms');
+    const el = document.getElementById('booking');
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 
   const handleExplore = () => {
-    const el = document.getElementById('booking');
+    const el = document.getElementById('rooms');
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 

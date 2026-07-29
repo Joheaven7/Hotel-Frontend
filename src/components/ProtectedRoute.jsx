@@ -68,4 +68,29 @@ export const RoleRoute = ({ children, allowedRoles = [] }) => {
   return children;
 };
 
+import { usePermissions } from '../../../portal/src/utils/permissions';
+
+// ── PermissionRoute — checks: logged in AND has required permission(s) ─────────────────
+export const PermissionRoute = ({ children, permission, any = false }) => {
+  const { user, token, isInitialized } = useAuthStore();
+  const location = useLocation();
+  const { hasPermission, hasAnyPermission } = usePermissions();
+
+  if (!isInitialized) return <Spinner />;
+
+  if (!token || !user) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  const allowed = Array.isArray(permission)
+    ? (any ? hasAnyPermission(permission) : permission.every(p => hasPermission(p)))
+    : hasPermission(permission);
+
+  if (!allowed) {
+    return <AccessDenied userRole={user.role} />;
+  }
+
+  return children;
+};
+
 export default ProtectedRoute;

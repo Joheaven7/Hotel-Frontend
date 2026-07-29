@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, AlertCircle, BedDouble, Users, DollarSign, Home } from 'lucide-react';
+import { Plus, Edit2, Trash2, AlertCircle, BedDouble, Users, DollarSign, Home, QrCode, Printer, RefreshCw, Power, ExternalLink } from 'lucide-react';
 import apiClient from '../services/api';
 import { useAuthStore } from '../store/authStore';
 import { onSocketEvent, offSocketEvent } from '../services/socket';
@@ -10,6 +10,8 @@ import Modal from '../components/ui/Modal';
 import FormField from '../components/ui/FormField';
 import StatusBadge from '../components/ui/StatusBadge';
 import StatCard from '../components/ui/StatCard';
+
+import { usePermissions } from '../../../portal/src/utils/permissions';
 
 const ROOM_TYPES = [
   { value: 'SINGLE', label: 'Single' },
@@ -35,8 +37,9 @@ const EMPTY_FORM = {
 
 const RoomsPage = () => {
   const { user } = useAuthStore();
-  const canManage = ['SUPER_ADMIN', 'ADMIN'].includes(user?.role);
-  const canUpdateStatus = ['SUPER_ADMIN', 'ADMIN', 'STAFF'].includes(user?.role);
+  const { hasPermission } = usePermissions();
+  const canManage = hasPermission('rooms.create') || hasPermission('rooms.edit') || hasPermission('rooms.delete');
+  const canUpdateStatus = hasPermission('rooms.edit');
 
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -46,7 +49,9 @@ const RoomsPage = () => {
   const [formErrors, setFormErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
-  const [statusModal, setStatusModal] = useState(null); // {room} for quick status change
+  const [statusModal, setStatusModal] = useState(null);
+  const [qrModal, setQrModal] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   // Add at top of RoomsPage component (after useState declarations):
   const [roomTypes, setRoomTypes] = useState([]);
@@ -188,6 +193,67 @@ const RoomsPage = () => {
     }
   };
 
+  const handleRegenerateQr = async (roomId) => {
+    try {
+      setActionLoading(true);
+      const res = await apiClient.post(`/rooms/${roomId}/regenerate-qr`);
+      toast.success('Room QR Token regenerated successfully');
+      setQrModal(res.data.room);
+      fetchRooms();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to regenerate QR token');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleToggleRoomService = async (roomId) => {
+    try {
+      setActionLoading(true);
+      const res = await apiClient.patch(`/rooms/${roomId}/toggle-room-service`);
+      toast.success(`Room service ${res.data.enableRoomService ? 'enabled' : 'disabled'}`);
+      setQrModal(res.data.room);
+      fetchRooms();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to toggle room service');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handlePrintQr = (room) => {
+    const printUrl = `http://localhost:3003/?token=${room.qrToken}`;
+    const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(printUrl)}`;
+
+    const win = window.open('', '_blank');
+    win.document.write(`
+      <html>
+        <head>
+          <title>Room Service QR Code - Room ${room.roomNumber}</title>
+          <style>
+            body { font-family: sans-serif; text-align: center; padding: 40px; }
+            .card { border: 2px solid #c9a050; padding: 30px; border-radius: 16px; max-width: 400px; margin: auto; }
+            h1 { font-family: serif; color: #1a1a1a; margin-bottom: 4px; }
+            p { color: #555; margin-bottom: 20px; font-size: 14px; }
+            img { width: 240px; height: 240px; margin: 10px 0; }
+            .footer { font-size: 12px; color: #888; margin-top: 20px; }
+          </style>
+        </head>
+        <body onload="window.print(); window.close();">
+          <div class="card">
+            <h1>LUXSTAY HOTEL</h1>
+            <p>Room Service Digital Menu</p>
+            <h2 style="margin: 0; color: #c9a050;">ROOM ${room.roomNumber}</h2>
+            <img src="${qrImgUrl}" alt="QR Code" />
+            <p>Scan with your phone camera to view menu & place room service orders.</p>
+            <div class="footer">Thank you for staying with us</div>
+          </div>
+        </body>
+      </html>
+    `);
+    win.document.close();
+  };
+
   // Stats
   const stats = {
     total: rooms.length,
@@ -241,6 +307,15 @@ const RoomsPage = () => {
               Status
             </button>
           )}
+
+          {/* Manage QR Code */}
+          <button
+            onClick={() => setQrModal(row)}
+            className="p-1.5 rounded-lg text-primary hover:bg-primary/10 transition-colors"
+            title="Manage Room QR Code"
+          >
+            <QrCode size={14} />
+          </button>
 
           {/* Edit + Delete — ADMIN only */}
           {canManage && (
@@ -439,6 +514,86 @@ const RoomsPage = () => {
             <p className="text-text-secondary text-sm leading-relaxed">
               Are you sure you want to delete <span className="font-semibold text-text-primary">Room {deleteConfirm?.roomNumber}</span>? This cannot be undone.
             </p>
+          </div>
+        </Modal>
+      )}
+
+      {/* QR Code Management Modal */}
+      {qrModal && (
+        <Modal
+          isOpen={!!qrModal}
+          onClose={() => setQrModal(null)}
+          title={`Room Service QR Code — Room ${qrModal.roomNumber}`}
+          size="md"
+          footer={
+            <div className="flex items-center justify-between w-full">
+              <button
+                onClick={() => handleToggleRoomService(qrModal._id)}
+                disabled={actionLoading}
+                className={`px-3 py-2 rounded-btn border text-sm font-medium flex items-center gap-1.5 transition-colors ${
+                  qrModal.enableRoomService
+                    ? 'border-warning/30 text-warning hover:bg-warning/10'
+                    : 'border-success/30 text-success hover:bg-success/10'
+                }`}
+              >
+                <Power size={14} />
+                {qrModal.enableRoomService ? 'Disable Service' : 'Enable Service'}
+              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleRegenerateQr(qrModal._id)}
+                  disabled={actionLoading}
+                  className="px-3 py-2 rounded-btn border border-border text-text-secondary hover:text-text-primary hover:bg-background transition-colors text-sm font-medium flex items-center gap-1.5"
+                >
+                  <RefreshCw size={14} className={actionLoading ? 'animate-spin' : ''} />
+                  Regenerate QR
+                </button>
+                <button
+                  onClick={() => handlePrintQr(qrModal)}
+                  className="px-4 py-2 rounded-btn bg-primary text-white hover:bg-primary/90 transition-colors text-sm font-medium flex items-center gap-1.5"
+                >
+                  <Printer size={14} />
+                  Print QR Code
+                </button>
+              </div>
+            </div>
+          }
+        >
+          <div className="space-y-4 text-center py-2">
+            <div className="inline-block p-4 rounded-2xl bg-white shadow-soft border border-border">
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(
+                  `http://localhost:3003/?token=${qrModal.qrToken}`
+                )}`}
+                alt={`QR Code for Room ${qrModal.roomNumber}`}
+                className="w-56 h-56 mx-auto rounded-lg"
+              />
+            </div>
+
+            <div className="p-3 rounded-xl bg-background border border-border text-left space-y-1">
+              <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide">
+                Secure Room Service Token URL
+              </p>
+              <p className="font-mono text-xs text-primary truncate select-all">
+                http://localhost:3003/?token={qrModal.qrToken}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 text-left text-xs">
+              <div className="p-3 rounded-xl bg-background border border-border">
+                <p className="text-text-secondary">Room Service Status</p>
+                <p className={`font-semibold mt-0.5 ${qrModal.enableRoomService ? 'text-success' : 'text-error'}`}>
+                  {qrModal.enableRoomService ? 'Active & Enabled' : 'Disabled'}
+                </p>
+              </div>
+              <div className="p-3 rounded-xl bg-background border border-border">
+                <p className="text-text-secondary">QR Scan Stats</p>
+                <p className="font-semibold text-text-primary mt-0.5">
+                  {qrModal.qrScanCount || 0} scans
+                  {qrModal.lastQrScanAt && ` · ${new Date(qrModal.lastQrScanAt).toLocaleDateString()}`}
+                </p>
+              </div>
+            </div>
           </div>
         </Modal>
       )}

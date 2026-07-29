@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import { Plus, Edit2, Trash2, Home, Landmark, Users, DollarSign, Activity, Loader2, Edit, Eye, EyeOff } from 'lucide-react';
 import apiClient from '../services/api';
 import { useAuthStore } from '../store/authStore';
+import { usePermissions } from '../../../portal/src/utils/permissions';
 import PageHeader from '../components/ui/PageHeader';
 import DataTable from '../components/ui/DataTable';
 import Modal from '../components/ui/Modal';
@@ -14,6 +15,8 @@ import StatCard from '../components/ui/StatCard';
 
 const HallsPage = () => {
   const { user } = useAuthStore();
+  const { hasPermission } = usePermissions();
+  const canManage = hasPermission('halls.create') || hasPermission('halls.edit') || hasPermission('halls.delete');
   const [halls, setHalls] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -244,8 +247,8 @@ const HallsPage = () => {
     {
       header: 'Actions',
       accessor: (row) => {
-        const canManage = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN';
-        if (!canManage) return null;
+        const canEditOrDelete = hasPermission('halls.edit') || hasPermission('halls.delete');
+        if (!canEditOrDelete) return null;
 
         return (
           <div className="flex items-center gap-2">
@@ -299,7 +302,7 @@ const HallsPage = () => {
         title="Halls Management"
         subtitle="Configure event venues, banquets, business halls, capacity parameters, and pricing structures."
         action={
-          (user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN') && (
+          canManage && (
             <button
               onClick={handleOpenCreateModal}
               className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/95 text-white rounded-xl font-semibold transition-all duration-200 shadow-soft"

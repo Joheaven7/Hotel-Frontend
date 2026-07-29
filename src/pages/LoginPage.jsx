@@ -193,24 +193,6 @@ const LoginPage = () => {
         transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
         className="relative z-10 w-full max-w-[480px] p-8 md:p-10 rounded-[32px] bg-white/10 dark:bg-white/5 backdrop-blur-md border border-white/20 shadow-xl"
       >
-        {/* Auth Toggle */}
-        {!showForgotPassword && (
-          <div className="flex bg-gray-100/50 dark:bg-black/40 rounded-full p-1 mb-10 border border-gray-200/50 dark:border-white/5 transition-colors duration-500">
-            <Link
-              to="/login"
-              className="flex-1 text-center py-2.5 rounded-full text-xs font-['Inter'] tracking-widest uppercase font-semibold transition-all duration-300 bg-[#F2B705] text-[#0A0A0A] shadow-sm"
-            >
-              Log In
-            </Link>
-            <Link
-              to="/register"
-              className="flex-1 text-center py-2.5 rounded-full text-xs font-['Inter'] tracking-widest uppercase font-semibold transition-all duration-300 text-gray-500 dark:text-white/50 hover:text-gray-900 dark:hover:text-white"
-            >
-              Sign Up
-            </Link>
-          </div>
-        )}
-
         <div className="relative overflow-hidden">
           <AnimatePresence mode="wait">
             

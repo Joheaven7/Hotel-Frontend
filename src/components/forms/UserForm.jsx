@@ -3,9 +3,9 @@ import toast from 'react-hot-toast';
 import apiClient from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import FormField from '../ui/FormField';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Check, RotateCcw, CheckSquare, Square } from 'lucide-react';
 
-const STAFF_ROLES = ['STAFF', 'ACCOUNTANT', 'HR', 'ADMIN', 'MANAGER', 'SUPER_ADMIN'];
+const STAFF_ROLES = ['STAFF', 'ACCOUNTANT', 'ADMIN', 'SUPER_ADMIN'];
 
 const DEPARTMENT_OPTIONS = [
   { value: 'Administration', label: 'Administration' },
@@ -34,17 +34,173 @@ const EMPLOYMENT_STATUS_OPTIONS = [
   { value: 'TERMINATED', label: 'Terminated' },
 ];
 
+// ── Static Permission Matrix (matches backend PERMISSIONS constant) ────────
+const PERMISSION_MODULES = [
+  {
+    module: 'Dashboard',
+    permissions: [
+      { key: 'dashboard.view', label: 'View Dashboard' },
+      { key: 'dashboard.analytics', label: 'View Analytics' },
+      { key: 'dashboard.revenue', label: 'View Revenue' },
+    ],
+  },
+  {
+    module: 'Rooms',
+    permissions: [
+      { key: 'rooms.view', label: 'View' },
+      { key: 'rooms.create', label: 'Create' },
+      { key: 'rooms.edit', label: 'Edit' },
+      { key: 'rooms.delete', label: 'Delete' },
+    ],
+  },
+  {
+    module: 'Halls',
+    permissions: [
+      { key: 'halls.view', label: 'View' },
+      { key: 'halls.create', label: 'Create' },
+      { key: 'halls.edit', label: 'Edit' },
+      { key: 'halls.delete', label: 'Delete' },
+    ],
+  },
+  {
+    module: 'Reservations',
+    permissions: [
+      { key: 'reservations.view', label: 'View' },
+      { key: 'reservations.create', label: 'Create' },
+      { key: 'reservations.edit', label: 'Edit' },
+      { key: 'reservations.cancel', label: 'Cancel' },
+      { key: 'reservations.approve', label: 'Approve' },
+    ],
+  },
+  {
+    module: 'Payments',
+    permissions: [
+      { key: 'payments.view', label: 'View' },
+      { key: 'payments.process', label: 'Process' },
+      { key: 'payments.refund', label: 'Refund' },
+      { key: 'payments.approve', label: 'Approve' },
+    ],
+  },
+  {
+    module: 'Payroll',
+    permissions: [
+      { key: 'payroll.view', label: 'View' },
+      { key: 'payroll.create', label: 'Create' },
+      { key: 'payroll.edit', label: 'Edit' },
+      { key: 'payroll.delete', label: 'Delete' },
+      { key: 'payroll.approve', label: 'Approve' },
+    ],
+  },
+  {
+    module: 'Users',
+    permissions: [
+      { key: 'users.view', label: 'View' },
+      { key: 'users.create', label: 'Create' },
+      { key: 'users.edit', label: 'Edit' },
+      { key: 'users.delete', label: 'Delete' },
+      { key: 'users.assignRoles', label: 'Assign Roles' },
+      { key: 'users.managePermissions', label: 'Manage Permissions' },
+    ],
+  },
+  {
+    module: 'Maintenance',
+    permissions: [
+      { key: 'maintenance.view', label: 'View' },
+      { key: 'maintenance.create', label: 'Create' },
+      { key: 'maintenance.update', label: 'Update' },
+      { key: 'maintenance.resolve', label: 'Resolve' },
+    ],
+  },
+  {
+    module: 'Complaints',
+    permissions: [
+      { key: 'complaints.view', label: 'View' },
+      { key: 'complaints.edit', label: 'Edit' },
+    ],
+  },
+  {
+    module: 'Reports',
+    permissions: [
+      { key: 'reports.view', label: 'View' },
+      { key: 'reports.export', label: 'Export' },
+    ],
+  },
+  {
+    module: 'Notifications',
+    permissions: [
+      { key: 'notifications.send', label: 'Send' },
+      { key: 'notifications.manage', label: 'Manage' },
+    ],
+  },
+  {
+    module: 'Chat',
+    permissions: [
+      { key: 'chat.private', label: 'Private Chat' },
+      { key: 'chat.department', label: 'Department Chat' },
+      { key: 'chat.broadcast', label: 'Broadcast' },
+    ],
+  },
+  {
+    module: 'System',
+    permissions: [
+      { key: 'system.auditLogs', label: 'Audit Logs' },
+      { key: 'system.restoreData', label: 'Restore Data' },
+      { key: 'system.settings', label: 'System Settings' },
+    ],
+  },
+];
+
+// ── Default permissions per role (matches backend DEFAULT_ROLE_PERMISSIONS) ─
+const DEFAULT_ROLE_PERMISSIONS = {
+  SUPER_ADMIN: ['*'],
+  ADMIN: [
+    'dashboard.view', 'dashboard.analytics', 'dashboard.revenue',
+    'rooms.view', 'rooms.create', 'rooms.edit', 'rooms.delete',
+    'halls.view', 'halls.create', 'halls.edit', 'halls.delete',
+    'reservations.view', 'reservations.create', 'reservations.edit', 'reservations.cancel', 'reservations.approve',
+    'payments.view', 'payments.process', 'payments.refund', 'payments.approve',
+    'users.view', 'users.create', 'users.edit',
+    'maintenance.view', 'maintenance.create', 'maintenance.update', 'maintenance.resolve',
+    'complaints.view', 'complaints.edit',
+    'reports.view', 'reports.export',
+    'notifications.send', 'notifications.manage',
+    'chat.private', 'chat.department', 'chat.broadcast',
+  ],
+  ACCOUNTANT: [
+    'dashboard.view', 'dashboard.revenue',
+    'payments.view', 'payments.process', 'payments.refund', 'payments.approve',
+    'payroll.view', 'payroll.create', 'payroll.edit', 'payroll.approve',
+    'reports.view', 'reports.export',
+  ],
+  STAFF: [
+    'dashboard.view',
+    'rooms.view',
+    'halls.view',
+    'reservations.view', 'reservations.create', 'reservations.edit',
+    'maintenance.view', 'maintenance.create', 'maintenance.update',
+    'complaints.view', 'complaints.edit',
+    'chat.private', 'chat.department',
+  ],
+  CUSTOMER: [
+    'reservations.view',
+    'payments.view',
+  ],
+};
+
+// Get all permission keys from all modules
+const ALL_PERMISSION_KEYS = PERMISSION_MODULES.flatMap(m => m.permissions.map(p => p.key));
+
 const UserForm = ({ user, onSuccess, onClose }) => {
   const { user: currentUser } = useAuthStore();
   const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
   const isAdmin = ['SUPER_ADMIN', 'ADMIN'].includes(currentUser?.role);
-  const isManager = ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(currentUser?.role);
 
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
     phone: '',
+    username: '',
     password: '',
     confirmPassword: '',
     role: 'CUSTOMER',
@@ -55,6 +211,7 @@ const UserForm = ({ user, onSuccess, onClose }) => {
     hireDate: '',
     employmentStatus: 'ACTIVE',
     isActive: true,
+    permissions: DEFAULT_ROLE_PERMISSIONS['CUSTOMER'] || [],
   });
 
   const [formErrors, setFormErrors] = useState({});
@@ -67,6 +224,7 @@ const UserForm = ({ user, onSuccess, onClose }) => {
         lastName: user.lastName || '',
         email: user.email || '',
         phone: user.phone || '',
+        username: user.username || '',
         password: '',
         confirmPassword: '',
         role: user.role || 'CUSTOMER',
@@ -77,9 +235,21 @@ const UserForm = ({ user, onSuccess, onClose }) => {
         hireDate: user.hireDate ? user.hireDate.slice(0, 10) : '',
         employmentStatus: user.employmentStatus || 'ACTIVE',
         isActive: user.isActive !== false,
+        permissions: user.permissions || [],
       });
     }
   }, [user]);
+
+  // Auto-populate permissions from role defaults when role changes (only for new users)
+  const handleRoleChange = (e) => {
+    const newRole = e.target.value;
+    setFormData((prev) => {
+      const defaults = DEFAULT_ROLE_PERMISSIONS[newRole] || [];
+      // For SUPER_ADMIN role, select all permissions
+      const newPermissions = defaults.includes('*') ? [...ALL_PERMISSION_KEYS] : [...defaults];
+      return { ...prev, role: newRole, permissions: newPermissions };
+    });
+  };
 
   const validateForm = () => {
     const errors = {};
@@ -111,6 +281,38 @@ const UserForm = ({ user, onSuccess, onClose }) => {
     if (formErrors[name]) setFormErrors((p) => ({ ...p, [name]: '' }));
   };
 
+  // ── Permission toggling ──────────────────────────────────────────────────
+  const togglePermission = (key) => {
+    setFormData((prev) => {
+      const updated = prev.permissions.includes(key)
+        ? prev.permissions.filter((p) => p !== key)
+        : [...prev.permissions, key];
+      return { ...prev, permissions: updated };
+    });
+  };
+
+  const selectAllModule = (modulePerms) => {
+    setFormData((prev) => {
+      const keys = modulePerms.map((p) => p.key);
+      const merged = [...new Set([...prev.permissions, ...keys])];
+      return { ...prev, permissions: merged };
+    });
+  };
+
+  const clearAllModule = (modulePerms) => {
+    setFormData((prev) => {
+      const keys = new Set(modulePerms.map((p) => p.key));
+      return { ...prev, permissions: prev.permissions.filter((p) => !keys.has(p)) };
+    });
+  };
+
+  const resetPermissions = () => {
+    const defaults = DEFAULT_ROLE_PERMISSIONS[formData.role] || [];
+    const newPermissions = defaults.includes('*') ? [...ALL_PERMISSION_KEYS] : [...defaults];
+    setFormData((prev) => ({ ...prev, permissions: newPermissions }));
+    toast.success('Permissions reset to role defaults');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -120,9 +322,14 @@ const UserForm = ({ user, onSuccess, onClose }) => {
         firstName: formData.firstName,
         lastName: formData.lastName,
         phone: formData.phone,
+        username: formData.username || undefined,
         role: formData.role,
         isActive: formData.isActive,
       };
+
+      if (isSuperAdmin) {
+        payload.permissions = formData.permissions;
+      }
 
       if (STAFF_ROLES.includes(formData.role)) {
         payload.department = formData.department;
@@ -152,12 +359,11 @@ const UserForm = ({ user, onSuccess, onClose }) => {
     }
   };
 
+  // ── Role options — only the 4 fixed roles ────────────────────────────────
   const roleOptions = isSuperAdmin
     ? [
       { value: 'CUSTOMER', label: 'Customer / Guest' },
       { value: 'STAFF', label: 'Staff' },
-      { value: 'MANAGER', label: 'Manager' },
-      { value: 'HR', label: 'HR Specialist' },
       { value: 'ACCOUNTANT', label: 'Accountant' },
       { value: 'ADMIN', label: 'Administrator' },
       { value: 'SUPER_ADMIN', label: 'Super Admin' },
@@ -166,24 +372,20 @@ const UserForm = ({ user, onSuccess, onClose }) => {
       ? [
         { value: 'CUSTOMER', label: 'Customer / Guest' },
         { value: 'STAFF', label: 'Staff' },
-        { value: 'MANAGER', label: 'Manager' },
-        { value: 'HR', label: 'HR Specialist' },
         { value: 'ACCOUNTANT', label: 'Accountant' },
       ]
-      : isManager
-        ? [
-          { value: 'CUSTOMER', label: 'Customer / Guest' },
-          { value: 'STAFF', label: 'Staff' },
-        ]
-        : [
-          { value: 'CUSTOMER', label: 'Customer / Guest' },
-          { value: 'STAFF', label: 'Staff' },
-        ];
+      : [
+        { value: 'CUSTOMER', label: 'Customer / Guest' },
+        { value: 'STAFF', label: 'Staff' },
+      ];
 
   const showStaffFields = STAFF_ROLES.includes(formData.role);
   const positionOptions = (POSITION_BY_DEPARTMENT[formData.department] || []).map(
     (p) => ({ value: p, label: p })
   );
+
+  // Should we show the permission matrix?
+  const showPermissions = isSuperAdmin;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -201,36 +403,38 @@ const UserForm = ({ user, onSuccess, onClose }) => {
         value={formData.email} onChange={handleChange} error={formErrors.email}
         disabled={!!user} required />
 
-      {/* Phone */}
-      <FormField label="Phone" name="phone" type="tel" placeholder="+251 9XX XXX XXX"
-        value={formData.phone} onChange={handleChange} />
+      {/* Phone + Username side by side */}
+      <div className="grid grid-cols-2 gap-4">
+        <FormField label="Phone" name="phone" type="tel" placeholder="+251 9XX XXX XXX"
+          value={formData.phone} onChange={handleChange} />
+        <FormField label="Username" name="username" placeholder="john.doe"
+          value={formData.username} onChange={handleChange} />
+      </div>
+
+      {/* Department */}
+      <FormField label="Department" name="department" type="select"
+        options={DEPARTMENT_OPTIONS} placeholder="Select department"
+        value={formData.department} onChange={handleChange}
+        error={formErrors.department} required={showStaffFields} />
 
       {/* Role */}
       <FormField label="Role" name="role" type="select" value={formData.role}
-        onChange={handleChange} options={roleOptions} required />
+        onChange={handleRoleChange} options={roleOptions} required />
 
-      {/* ── Employment Details — staff-level roles ── */}
+      {/* ── Position & Employment Details — staff-level roles ── */}
       {showStaffFields && (
         <div className="p-4 rounded-xl bg-background border border-border space-y-4">
           <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide">
-            Employment Details
+            Position & Employment Details
           </p>
 
-          {/* Department + Position side by side */}
-          <div className="grid grid-cols-2 gap-4">
-            <FormField label="Department" name="department" type="select"
-              options={DEPARTMENT_OPTIONS} placeholder="Select department"
-              value={formData.department} onChange={handleChange}
-              error={formErrors.department} required />
-
-            <FormField
-              label="Position / Job Title" name="position"
-              type={positionOptions.length > 0 ? 'select' : 'text'}
-              options={positionOptions.length > 0 ? [{ value: '', label: 'Select position' }, ...positionOptions] : undefined}
-              placeholder="e.g. Receptionist"
-              value={formData.position} onChange={handleChange}
-              error={formErrors.position} required />
-          </div>
+          <FormField
+            label="Position / Job Title" name="position"
+            type={positionOptions.length > 0 ? 'select' : 'text'}
+            options={positionOptions.length > 0 ? [{ value: '', label: 'Select position' }, ...positionOptions] : undefined}
+            placeholder="e.g. Receptionist"
+            value={formData.position} onChange={handleChange}
+            error={formErrors.position} required />
 
           {/* Work Description */}
           <FormField label="Work Description / Responsibilities" name="workDescription"
@@ -282,6 +486,111 @@ const UserForm = ({ user, onSuccess, onClose }) => {
           </div>
         </label>
       </div>
+
+      {/* ── Permission Matrix — SUPER_ADMIN only ── */}
+      {showPermissions && (
+        <div className="border-t border-border pt-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-text-primary">Permission Matrix</h3>
+              <p className="text-xs text-text-secondary">
+                Assign individual permissions for this user
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={resetPermissions}
+              className="flex items-center gap-1.5 text-xs text-warning hover:text-warning/80 font-medium px-2.5 py-1.5 bg-warning/5 rounded-lg border border-warning/10 transition-all"
+            >
+              <RotateCcw size={12} /> Reset to Role Defaults
+            </button>
+          </div>
+
+          <div className="bg-background rounded-xl border border-border p-4 max-h-[28rem] overflow-y-auto space-y-3">
+            {PERMISSION_MODULES.map(({ module, permissions: perms }) => {
+              const moduleKeys = perms.map((p) => p.key);
+              const checkedCount = moduleKeys.filter((k) => formData.permissions.includes(k)).length;
+              const allChecked = checkedCount === moduleKeys.length;
+
+              return (
+                <div key={module} className="bg-surface rounded-lg border border-border p-3">
+                  {/* Module header with Select All / Clear All */}
+                  <div className="flex items-center justify-between mb-2 border-b border-border pb-2">
+                    <h4 className="text-xs font-semibold text-text-primary flex items-center gap-2">
+                      {module}
+                      <span className="text-[10px] font-normal text-text-secondary bg-background px-1.5 py-0.5 rounded-full">
+                        {checkedCount}/{moduleKeys.length}
+                      </span>
+                    </h4>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => selectAllModule(perms)}
+                        className={`flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded transition-all ${
+                          allChecked
+                            ? 'text-text-secondary cursor-default'
+                            : 'text-primary hover:bg-primary/5 cursor-pointer'
+                        }`}
+                        disabled={allChecked}
+                      >
+                        <CheckSquare size={10} /> All
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => clearAllModule(perms)}
+                        className={`flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded transition-all ${
+                          checkedCount === 0
+                            ? 'text-text-secondary cursor-default'
+                            : 'text-error hover:bg-error/5 cursor-pointer'
+                        }`}
+                        disabled={checkedCount === 0}
+                      >
+                        <Square size={10} /> Clear
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Permission checkboxes */}
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {perms.map((perm) => {
+                      const isChecked = formData.permissions.includes(perm.key);
+                      return (
+                        <label
+                          key={perm.key}
+                          className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border cursor-pointer transition-all text-xs ${
+                            isChecked
+                              ? 'bg-primary/5 border-primary/20 text-primary'
+                              : 'border-transparent hover:bg-background text-text-secondary'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => togglePermission(perm.key)}
+                            className="sr-only"
+                          />
+                          <div
+                            className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors shrink-0 ${
+                              isChecked
+                                ? 'bg-primary border-primary text-white'
+                                : 'border-border'
+                            }`}
+                          >
+                            {isChecked && <Check size={8} />}
+                          </div>
+                          <span className="truncate" title={perm.key}>
+                            {perm.label}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Password */}
       <div className="border-t border-border pt-4 space-y-4">

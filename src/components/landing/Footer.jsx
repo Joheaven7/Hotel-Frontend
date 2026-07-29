@@ -64,7 +64,6 @@ export default function Footer() {
             <h4 className="font-['Playfair_Display'] text-text-primary dark:text-white text-lg font-semibold mb-6">Information</h4>
             <ul className="space-y-3 font-['Inter']">
               <li><Link to="/login" className="text-text-secondary dark:text-white/50 hover:text-[#F2B705] dark:hover:text-[#F2B705] text-sm transition-colors duration-300">Guest Portal</Link></li>
-              <li><Link to="/register" className="text-text-secondary dark:text-white/50 hover:text-[#F2B705] dark:hover:text-[#F2B705] text-sm transition-colors duration-300">Become a Member</Link></li>
               <li><a href="#" className="text-text-secondary dark:text-white/50 hover:text-[#F2B705] dark:hover:text-[#F2B705] text-sm transition-colors duration-300">Privacy Policy</a></li>
               <li><a href="#" className="text-text-secondary dark:text-white/50 hover:text-[#F2B705] dark:hover:text-[#F2B705] text-sm transition-colors duration-300">Terms & Conditions</a></li>
               <li><a href="#" className="text-text-secondary dark:text-white/50 hover:text-[#F2B705] dark:hover:text-[#F2B705] text-sm transition-colors duration-300">FAQ</a></li>
@@ -105,3 +104,6 @@ export default function Footer() {
     </footer>
   );
 }
+
+
+

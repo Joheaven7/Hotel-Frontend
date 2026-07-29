@@ -18,7 +18,7 @@ export default function CTASection() {
   const y = useTransform(scrollYProgress, [0, 1], ["-15%", "15%"]);
 
   const handleReserve = () => {
-    if (!user) navigate('/register');
+    if (!user) navigate('/login');
     else navigate('/reservations');
   };
 
@@ -89,7 +89,7 @@ export default function CTASection() {
             onClick={handleReserve}
             className="btn-gold-border-animated"
           >
-            {user ? 'Book Your Suite' : 'Become a Guest'}
+            {user ? 'Book Your Suite' : 'Login to Book'}
           </button>
         </motion.div>
       </div>
