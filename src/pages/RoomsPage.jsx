@@ -11,7 +11,7 @@ import FormField from '../components/ui/FormField';
 import StatusBadge from '../components/ui/StatusBadge';
 import StatCard from '../components/ui/StatCard';
 
-import { usePermissions } from '../../../portal/src/utils/permissions';
+import { usePermissions } from '../utils/permissions';
 
 const ROOM_TYPES = [
   { value: 'SINGLE', label: 'Single' },

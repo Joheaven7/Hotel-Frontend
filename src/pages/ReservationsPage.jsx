@@ -13,7 +13,7 @@ import DataTable from '../components/ui/DataTable';
 import Modal from '../components/ui/Modal';
 import FormField from '../components/ui/FormField';
 import StatusBadge from '../components/ui/StatusBadge';
-import { usePermissions } from '../../../portal/src/utils/permissions';
+import { usePermissions } from '../utils/permissions';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const safeFormat = (d, fmt = 'MMM dd, yyyy') => {

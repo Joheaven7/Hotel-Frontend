@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import { usePermissions } from '../../../portal/src/utils/permissions';
+import { usePermissions } from '../utils/permissions';
 import {
   LayoutDashboard, BedDouble, CalendarDays, CreditCard,
   Users, Wrench, BarChart3, Tent, LogOut, Hotel,

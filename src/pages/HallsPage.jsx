@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 import { Plus, Edit2, Trash2, Home, Landmark, Users, DollarSign, Activity, Loader2, Edit, Eye, EyeOff } from 'lucide-react';
 import apiClient from '../services/api';
 import { useAuthStore } from '../store/authStore';
-import { usePermissions } from '../../../portal/src/utils/permissions';
+import { usePermissions } from '../utils/permissions';
 import PageHeader from '../components/ui/PageHeader';
 import DataTable from '../components/ui/DataTable';
 import Modal from '../components/ui/Modal';

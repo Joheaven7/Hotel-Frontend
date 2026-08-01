@@ -68,7 +68,7 @@ export const RoleRoute = ({ children, allowedRoles = [] }) => {
   return children;
 };
 
-import { usePermissions } from '../../../portal/src/utils/permissions';
+import { usePermissions } from '../utils/permissions';
 
 // ── PermissionRoute — checks: logged in AND has required permission(s) ─────────────────
 export const PermissionRoute = ({ children, permission, any = false }) => {
