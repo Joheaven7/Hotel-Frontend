@@ -12,8 +12,8 @@ export default function RoomListingPage() {
   useEffect(() => {
     const fetchRoomTypes = async () => {
       try {
-        const { data } = await apiClient.get('/room-types');
-        setRoomTypes(data.data || []);
+        const { data } = await apiClient.get('/room-types/public');
+        setRoomTypes(data.roomTypes || data.data || []);
       } catch (error) {
         console.error('Failed to fetch room types:', error);
       } finally {
