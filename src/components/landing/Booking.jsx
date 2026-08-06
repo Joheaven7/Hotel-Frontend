@@ -13,13 +13,15 @@ export default function Booking() {
 
   useEffect(() => {
     setLoadingTypes(true);
-    apiClient.get('/types')
-      .then(res => {
-        const fetchedTypes = res.data.types || [];
-        setRoomTypes(fetchedTypes.filter(t => t.category === 'ROOM'));
-        setHallTypes(fetchedTypes.filter(t => t.category === 'HALL'));
+    Promise.all([
+      apiClient.get('/room-types/public').catch(() => ({ data: { roomTypes: [] } })),
+      apiClient.get('/hall-types/public').catch(() => ({ data: { hallTypes: [] } })),
+    ])
+      .then(([roomRes, hallRes]) => {
+        setRoomTypes(roomRes.data?.roomTypes || []);
+        setHallTypes(hallRes.data?.hallTypes || []);
       })
-      .catch(err => {
+      .catch((err) => {
         console.error('Failed to fetch types:', err);
         showToast.error('Failed to load room/hall types. Please try again.');
       })

@@ -221,8 +221,16 @@ const RoomsPage = () => {
     }
   };
 
+  const getMenuBaseUrl = () => {
+    const envUrl = import.meta.env.VITE_MENU_URL || import.meta.env.VITE_MENU_FRONTEND_URL;
+    if (envUrl && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')) {
+      return envUrl.replace(/\/+$/, '');
+    }
+    return 'https://hotel-menu-silk.vercel.app';
+  };
+
   const handlePrintQr = (room) => {
-    const printUrl = `http://localhost:3003/?token=${room.qrToken}`;
+    const printUrl = `${getMenuBaseUrl()}/?token=${room.qrToken}`;
     const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(printUrl)}`;
 
     const win = window.open('', '_blank');
@@ -563,7 +571,7 @@ const RoomsPage = () => {
             <div className="inline-block p-4 rounded-2xl bg-white shadow-soft border border-border">
               <img
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(
-                  `http://localhost:3003/?token=${qrModal.qrToken}`
+                  `${getMenuBaseUrl()}/?token=${qrModal.qrToken}`
                 )}`}
                 alt={`QR Code for Room ${qrModal.roomNumber}`}
                 className="w-56 h-56 mx-auto rounded-lg"
@@ -575,7 +583,7 @@ const RoomsPage = () => {
                 Secure Room Service Token URL
               </p>
               <p className="font-mono text-xs text-primary truncate select-all">
-                http://localhost:3003/?token={qrModal.qrToken}
+                {getMenuBaseUrl()}/?token={qrModal.qrToken}
               </p>
             </div>
 

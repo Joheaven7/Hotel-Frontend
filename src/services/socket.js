@@ -1,7 +1,7 @@
 import io from 'socket.io-client';
 
 let socket = null;
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:8000';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_URL?.replace('/api', '') || 'https://hotel-backend-lnqn.onrender.com';
 
 export const setupSocketConnection = (token) => {
   if (socket) return;

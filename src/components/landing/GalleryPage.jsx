@@ -229,9 +229,14 @@ export default function GalleryPage() {
   // Fetch API images and merge with fallbacks
   useEffect(() => {
     window.scrollTo(0, 0);
-    apiClient.get('/types').then((res) => {
+    Promise.all([
+      apiClient.get('/room-types/public').catch(() => ({ data: { roomTypes: [] } })),
+      apiClient.get('/hall-types/public').catch(() => ({ data: { hallTypes: [] } })),
+    ]).then(([roomRes, hallRes]) => {
       let apiImages = [];
-      const fetchedTypes = res.data.types || [];
+      const rooms = (roomRes.data?.roomTypes || []).map(r => ({ ...r, category: 'ROOM' }));
+      const halls = (hallRes.data?.hallTypes || []).map(h => ({ ...h, category: 'HALL' }));
+      const fetchedTypes = [...rooms, ...halls];
       
       fetchedTypes.forEach((t, i) => {
         (t.images || []).forEach((imgPath, j) => {
@@ -250,7 +255,6 @@ export default function GalleryPage() {
         });
       });
 
-      // Always keep fallbacks to ensure every category has images.
       if (apiImages.length > 0) {
         const apiCategories = new Set(apiImages.map(img => img.category));
         const keptFallbacks = fallbackImages.filter(f => !apiCategories.has(f.category));
